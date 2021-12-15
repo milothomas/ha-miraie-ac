@@ -21,7 +21,8 @@
     "ac",
     "aircon",
     "climate",
-    "thermostat"
+    "thermostat",
+    "node-red"
   ],
   "author": "milothomas",
   "license": "CC BY 4.0",
