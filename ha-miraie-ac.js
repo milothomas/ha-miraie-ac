@@ -1,10 +1,7 @@
 const axios = require('axios')
 const HABroker = require('./ha-broker');
 const MiraieBroker = require('./miraie-broker');
-
-let log = (message) => {
-    //console.log(message);
-};
+const Logger = require('./logger');
 
 const constants = {
     httpClientId: 'PBcMcfG19njNCL8AOgvRzIC8AjQa',
@@ -26,7 +23,7 @@ const getScope = () => `an_${Math.floor(Math.random() * 1000000000)}`;
 
 const parseLoginResponse = (resp) => new Promise((resolve, reject) => {
     if (resp && resp.data && resp.data.userId && resp.data.accessToken) {
-        log("Login successful!");
+        Logger.log("Login successful!");
         resolve({
             userId: resp.data.userId,
             accessToken: resp.data.accessToken
@@ -49,6 +46,7 @@ const parseHomeDetails = (data, accessToken) => {
                 friendlyName: d.deviceName,
                 controlTopic: d.topic ? `${d.topic[0]}/control` : null,
                 statusTopic: d.topic ? `${d.topic[0]}/status` : null,
+                connectionStatusTopic: d.topic ? `${d.topic[0]}/connectionStatus` : null, 
                 haStatusTopic: `miraie-ac/${deviceName}/state`,
                 haAvailabilityTopic: `miraie-ac/${deviceName}/availability`,
                 haActionTopic: `miraie-ac/${deviceName}/action`,
@@ -61,7 +59,7 @@ const parseHomeDetails = (data, accessToken) => {
         devices.push(...devicesInSpace);
     });
 
-    log(`Discovered ${devices.length} devices`);
+    Logger.log(`Discovered ${devices.length} devices`);
     return {
         homeId,
         accessToken,
@@ -70,25 +68,31 @@ const parseHomeDetails = (data, accessToken) => {
 };
 
 const onMiraieStateChanged = (topic, payload) => {
-    const device = miraieHome.devices.find(d => d.statusTopic === topic);
-    if (device) {
-        log(`Device status changed. Device: ${device.friendlyName}`);
-        haBroker.publish(device, payload.toString());
+    const device = miraieHome.devices.find(d => d.statusTopic === topic || d.connectionStatusTopic === topic);
+    if (!device) return;
+
+    if (device.statusTopic == topic) {
+        Logger.log(`${device.friendlyName}: Status changed.`);
+        haBroker.publishState(device, payload.toString());
+    } else {
+        Logger.log(`${device.friendlyName}: Connection status changed.`);
+        haBroker.publishConnectionStatus(device, payload.toString());
     }
 };
 
 const onHACommandReceieved = (topic, payload) => {
     const device = miraieHome.devices.find(d => topic.startsWith(`miraie-ac/${d.name}/`));
     if (device) {
-        log(`Command receieved for Device: ${device.friendlyName}`);
+        Logger.log(`${device.friendlyName}: Command receieved.`);
         miraieBroker.publish(device, payload.toString(), topic);
     }
 };
 
 const connectBrokers = (homeDetails) => {
     miraieHome = homeDetails;
-    const miraieTopics = miraieHome.devices.map(d => d.statusTopic);
-
+    const deviceTopics = miraieHome.devices.map(d => [d.statusTopic, d.connectionStatusTopic]);
+    const miraieTopics = [].concat(...deviceTopics)
+    
     haBroker = new HABroker(miraieHome.devices, onHACommandReceieved);
     miraieBroker = new MiraieBroker(miraieTopics, onMiraieStateChanged);
 
@@ -144,13 +148,12 @@ module.exports = function (RED) {
         settings.useCleanSession = config.useCleanSession;
         settings.useSsl = config.useSsl;
 
-
-        console.log(JSON.stringify(settings));
-
+        Logger.log ('Starting...');
         login(this.credentials.mobile, this.credentials.password)
             .then(userDetiails => getHomeDetails(userDetiails.accessToken))
             .then(homeDetails => connectBrokers(homeDetails))
             .catch(e => {
+                Logger.log('Error:' + e);
                 node.error(e);
             });
     }

@@ -1,4 +1,5 @@
 const MqttHelper = require('./mqtt-helper');
+const Logger = require('./logger');
 
 let mqttHelper;
 let topics;
@@ -15,6 +16,7 @@ const generateRandomNumber = (len) => Math.floor(Math.random() * Math.pow(10, le
 const generateClientId = () => `an${generateRandomNumber(16)}${generateRandomNumber(5)}`;
 
 const onConnected = () => {
+    Logger.log('MirAIe broker connected!');
     mqttHelper.subscribe(topics, { qos: 0 });
 }
 

@@ -1,5 +1,6 @@
 const MqttHelper = require('./mqtt-helper');
 const Discovery = require('./discovery');
+const Logger = require('./logger');
 
 let mqttHelper;
 let mqttDisco;
@@ -19,6 +20,7 @@ const publishDisoveryMessages = () => {
 };
 
 const onConnected = () => {
+    Logger.log('HA broker connected!');
     publishDisoveryMessages();
     mqttHelper.subscribe(topics, { qos: 2 });
 };
@@ -36,9 +38,8 @@ const onPublishCompleted = (e) => {
 }
 
 const getAction = (state) => {
-    const stateObj = JSON.parse(state);
-    const mode = stateObj.acmd;
-    const power = stateObj.ps;
+    const mode = state.acmd;
+    const power = state.ps;
 
     if (power === 'off') {
         return 'off';
@@ -56,12 +57,16 @@ const getAction = (state) => {
     return 'idle';
 };
 
-const generateMessages = (device, state) => {
+const generateAvailabilityMessage = (device, state) => {
     const availabilityMsg = {
         topic: device.haAvailabilityTopic,
-        payload: state.onlineStatus === "false" ? "offline" : "online"
+        payload: state.onlineStatus === "true" ? "online" : "offline"
     };
 
+    return [availabilityMsg];
+}
+
+const generateStateMessages = (device, state) => {
     const actionMsg = {
         topic: device.haActionTopic,
         payload: getAction(state)
@@ -69,10 +74,10 @@ const generateMessages = (device, state) => {
 
     const statusMsg = {
         topic: device.haStatusTopic,
-        payload: state
+        payload: JSON.stringify(state)
     };
 
-    return [availabilityMsg, actionMsg, statusMsg];
+    return [actionMsg, statusMsg];
 }
 
 module.exports = HABroker;
@@ -91,7 +96,14 @@ HABroker.prototype.connect = function (settings) {
     mqttHelper.connect(settings.haBrokerHost, settings.haBrokerPort, clientId, settings.useSsl, settings.haBrokerUsername, settings.haBrokerPassword, settings.useCleanSession, onConnected, onMessageReceieved);
 };
 
-HABroker.prototype.publish = function (device, state) {
-    const messages = generateMessages(device, state);
+HABroker.prototype.publishState = function (device, state) {
+    const stateObj = JSON.parse(state);
+    const messages = generateStateMessages(device, stateObj);
+    messages.map(m => publishMessage(m.topic, m.payload));
+};
+
+HABroker.prototype.publishConnectionStatus = function (device, state) {
+    const stateObj = JSON.parse(state);
+    const messages = generateAvailabilityMessage(device, stateObj);
     messages.map(m => publishMessage(m.topic, m.payload));
 };
