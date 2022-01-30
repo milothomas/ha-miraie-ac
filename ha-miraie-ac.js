@@ -2,6 +2,7 @@ const axios = require('axios')
 const HABroker = require('./ha-broker');
 const MiraieBroker = require('./miraie-broker');
 const Logger = require('./logger');
+const logger = require('./logger');
 
 const constants = {
     httpClientId: 'PBcMcfG19njNCL8AOgvRzIC8AjQa',
@@ -23,7 +24,7 @@ const getScope = () => `an_${Math.floor(Math.random() * 1000000000)}`;
 
 const parseLoginResponse = (resp) => new Promise((resolve, reject) => {
     if (resp && resp.data && resp.data.userId && resp.data.accessToken) {
-        Logger.log("Login successful!");
+        Logger.logDebug("Login successful!");
         resolve({
             userId: resp.data.userId,
             accessToken: resp.data.accessToken
@@ -37,6 +38,9 @@ const parseHomeDetails = (data, accessToken) => {
     const homeId = data.homeId
     const devices = [];
 
+    this.trace("boooooo");
+
+    this.debug("Log something more details for debugging the node's behaviour");
     data.spaces.map(s => {
         const devicesInSpace = s.devices.map(d => {
             const deviceName = getFormattedName(d.deviceName);
@@ -46,7 +50,7 @@ const parseHomeDetails = (data, accessToken) => {
                 friendlyName: d.deviceName,
                 controlTopic: d.topic ? `${d.topic[0]}/control` : null,
                 statusTopic: d.topic ? `${d.topic[0]}/status` : null,
-                connectionStatusTopic: d.topic ? `${d.topic[0]}/connectionStatus` : null, 
+                connectionStatusTopic: d.topic ? `${d.topic[0]}/connectionStatus` : null,
                 haStatusTopic: `miraie-ac/${deviceName}/state`,
                 haAvailabilityTopic: `miraie-ac/${deviceName}/availability`,
                 haActionTopic: `miraie-ac/${deviceName}/action`,
@@ -59,7 +63,8 @@ const parseHomeDetails = (data, accessToken) => {
         devices.push(...devicesInSpace);
     });
 
-    Logger.log(`Discovered ${devices.length} devices`);
+    Logger.logDebug({ message: `Discovered ${devices.length} devices.`, devices: devices.map(d => d.friendlyName) });
+
     return {
         homeId,
         accessToken,
@@ -72,10 +77,10 @@ const onMiraieStateChanged = (topic, payload) => {
     if (!device) return;
 
     if (device.statusTopic == topic) {
-        Logger.log(`${device.friendlyName}: Status changed.`);
+        Logger.logDebug({ message: 'Status updated.', device: device.friendlyName });
         haBroker.publishState(device, payload.toString());
     } else {
-        Logger.log(`${device.friendlyName}: Connection status changed.`);
+        Logger.logDebug({ message: 'Availability updated.', device: device.friendlyName });
         haBroker.publishConnectionStatus(device, payload.toString());
     }
 };
@@ -83,7 +88,7 @@ const onMiraieStateChanged = (topic, payload) => {
 const onHACommandReceieved = (topic, payload) => {
     const device = miraieHome.devices.find(d => topic.startsWith(`miraie-ac/${d.name}/`));
     if (device) {
-        Logger.log(`${device.friendlyName}: Command receieved.`);
+        Logger.logDebug({ message: 'Command received.', device: device.friendlyName });
         miraieBroker.publish(device, payload.toString(), topic);
     }
 };
@@ -92,7 +97,7 @@ const connectBrokers = (homeDetails) => {
     miraieHome = homeDetails;
     const deviceTopics = miraieHome.devices.map(d => [d.statusTopic, d.connectionStatusTopic]);
     const miraieTopics = [].concat(...deviceTopics)
-    
+
     haBroker = new HABroker(miraieHome.devices, onHACommandReceieved);
     miraieBroker = new MiraieBroker(miraieTopics, onMiraieStateChanged);
 
@@ -134,10 +139,38 @@ const getHomeDetails = (accessToken) => {
         });
 };
 
+const isConfigValid = () => {
+    const errors = [];
+    if (!settings.mobile) {
+        errors.push('Mobile number is empty.');
+    }
+
+    if (!settings.password) {
+        errors.push('Password is empty.');
+    }
+
+    if (!settings.haBrokerHost) {
+        errors.push('HA Broker Host is empty.');
+    }
+
+    if (!settings.haBrokerPort) {
+        errors.push('HA Broker Port is empty.');
+    }
+
+    if (errors.length) {
+        Logger.logFatal({ message: "Configuration error.", errors })
+        return false;
+    }
+
+    return true;
+}
+
 module.exports = function (RED) {
     function MirAIeNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
+
+        Logger.initialize(node, config.logLevel, logToSidebar);
 
         settings.mobile = this.credentials.mobile;
         settings.password = this.credentials.password;
@@ -148,14 +181,22 @@ module.exports = function (RED) {
         settings.useCleanSession = config.useCleanSession;
         settings.useSsl = config.useSsl;
 
-        Logger.log ('Starting...');
+        if (!isConfigValid(config, this.credentials)) {
+            this.status({ fill: "red", shape: "ring", text: "Configuration error." });
+            node.error("Node configuration error. Please see debug panel for more info.");
+            return;
+        }
+
+        Logger.logInfo('Starting MirAIe node...');
         login(this.credentials.mobile, this.credentials.password)
             .then(userDetiails => getHomeDetails(userDetiails.accessToken))
             .then(homeDetails => connectBrokers(homeDetails))
             .catch(e => {
-                Logger.log('Error:' + e);
+                this.status({ fill: "red", shape: "ring", text: "Error connecting." });
                 node.error(e);
             });
+
+        this.status({ fill: "green", shape: "dot", text: "Connected." });
     }
 
     RED.nodes.registerType("ha-miraie-ac", MirAIeNode, {
@@ -166,4 +207,9 @@ module.exports = function (RED) {
             haBrokerPassword: { type: "password" },
         }
     });
+
+    const logToSidebar = debugMsg => {
+        var msg = RED.util.encodeObject(debugMsg, { maxLength: 1000 });
+        RED.comms.publish("debug", msg);
+    };
 }

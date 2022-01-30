@@ -1,17 +1,53 @@
-let enableLogging = false;
+let _callback;
+let _debugMessage;
+let _logLevel;
+
+const LOG_LEVELS = {
+    OFF: { name: "OFF", value: 0 },
+    DEBUG: { name: "DEBUG", value: 10 },
+    INFO: { name: "INFO", value:  20},
+    WARN: { name: "WARN", value: 30 },
+    ERROR: { name: "ERROR", value: 40 },
+    FATAL: { name: "FATAL", value: 99 }
+};
 
 module.exports = new Logger();
+function Logger() { }
 
-function Logger () {}
-
-Logger.prototype.log = function(message) {
-    enableLogging && console.log(`${(new Date()).toISOString()}: ${message}\n`);
+Logger.prototype.initialize = function (node, logLevel, callback) {
+    _callback = callback;
+    _logLevel = LOG_LEVELS[logLevel] || LOG_LEVELS.INFO;
+    _debugMessage = { id: node.id, z: node.z, _alias: node._alias, path: node._flow.path, name: node.name, topic: '' };
 }
 
-Logger.prototype.enable = function(message) {
-    enableLogging = true;
+const log = function (level, data) {
+    if(!_callback || _logLevel == LOG_LEVELS.OFF || level.value < _logLevel.value) return;
+    
+    if (typeof data === "string") {
+        _debugMessage.msg = { message : data };
+    } else {
+        _debugMessage.msg = data;
+    }
+
+    _callback({ ..._debugMessage, level });
 }
 
-Logger.prototype.disable = function(message) {
-    enableLogging = false;
+Logger.prototype.logDebug = function (data) {
+    log(LOG_LEVELS.DEBUG, data);
+}
+
+Logger.prototype.logInfo = function (data) {
+    log(LOG_LEVELS.INFO, data);
+}
+
+Logger.prototype.logWarning = function (data) {
+    log(LOG_LEVELS.WARN, data);
+}
+
+Logger.prototype.logError = function (data) {
+    log(LOG_LEVELS.ERROR, data);
+}
+
+Logger.prototype.logFatal = function (data) {
+    log(LOG_LEVELS.FATAL, data);
 }

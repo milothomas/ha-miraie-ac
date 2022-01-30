@@ -1,12 +1,13 @@
 {
   "name": "node-red-contrib-ha-miraie-ac",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "NodeRed node to integrate HA with Panasonic MirAIe air conditioners",
   "main": "ha-miraie-ac.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "node-red": {
+    "version": ">=2.0.0",
     "nodes": {
       "ha-miraie-ac": "ha-miraie-ac.js"
     }
@@ -26,8 +27,15 @@
   ],
   "author": "milothomas",
   "license": "CC BY 4.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milothomas/ha-miraie-ac"
+  },
   "dependencies": {
     "axios": "^0.24.0",
     "mqtt": "^4.2.8"
+  },
+  "engines": {
+    "node": "*"
   }
 }

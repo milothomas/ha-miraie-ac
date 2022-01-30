@@ -1,0 +1,30 @@
+[
+    {
+        "id": "cc520a6552111f8e",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "61390bede4c88c55",
+        "type": "ha-miraie-ac",
+        "z": "cc520a6552111f8e",
+        "name": "MirAIe",
+        "haBrokerHost": "192.168.1.1",
+        "haBrokerPort": "1883",
+        "useCleanSession": "true",
+        "useSsl": "false",
+        "logLevel": "INFO",
+        "credentials": {
+            "mobile": "+911234567890",
+            "password": "SomePassword",
+            "haBrokerUsername": "ha",
+            "haBrokerPassword": "password"
+        },
+        "x": 120,
+        "y": 120,
+        "wires": []
+    }
+]

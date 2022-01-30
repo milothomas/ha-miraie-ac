@@ -5,9 +5,10 @@
         defaults: {
             name: { value: "MirAIe" },
             haBrokerHost: { value: "" },
-            haBrokerPort: { value: "1883" },
+            haBrokerPort: { value: "1883", validate:RED.validators.number() },
             useCleanSession: { value: "true" },
             useSsl: { value: "false" },
+            logLevel: { value: "INFO" }
         },
         credentials: {
             mobile: { type: "text" },
@@ -32,7 +33,7 @@
     
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
+        <input type="text" id="node-input-name" placeholder="Name" required>
     </div>
 
     <hr align="middle">
@@ -42,12 +43,12 @@
 
     <div class="form-row">
         <label for="node-input-mobile"><i class="fa fa-tag"></i> Mobile</label>
-        <input type="text" id="node-input-mobile" placeholder="e.g. +91xxxxxxxxxx">
+        <input type="text" id="node-input-mobile" placeholder="e.g. +91xxxxxxxxxx" required>
     </div>
 
     <div class="form-row">
         <label for="node-input-password"><i class="fa fa-tag"></i> Password</label>
-        <input type="password" id="node-input-password" placeholder="Password">
+        <input type="password" id="node-input-password" placeholder="Password" required>
     </div>
 
     <hr align="middle">
@@ -56,12 +57,12 @@
     </div>
     <div class="form-row">
         <label for="node-input-haBrokerHost"><i class="fa fa-tag"></i> Host</label>
-        <input type="text" id="node-input-haBrokerHost" placeholder="e.g. localhost">
+        <input type="text" id="node-input-haBrokerHost" placeholder="e.g. localhost" required>
     </div>
 
     <div class="form-row">
         <label for="node-input-haBrokerPort"><i class="fa fa-tag"></i> Port</label>
-        <input type="text" id="node-input-haBrokerPort" placeholder="e.g. 1883">
+        <input type="text" id="node-input-haBrokerPort" placeholder="e.g. 1883" required>
     </div>
 
     <div class="form-row">
@@ -87,6 +88,17 @@
         <select id="node-input-useSsl">
             <option value="true">Yes</option>
             <option value="false">No</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-logLevel"><i class="fa fa-tag"></i> Log Level</label>
+        <select id="node-input-logLevel">
+            <option value="OFF">OFF</option>
+            <option value="DEBUG">DEBUG</option>
+            <option value="INFO">INFO</option>
+            <option value="WARN">WARN</option>
+            <option value="ERROR">ERROR</option>
         </select>
     </div>
 </script>
