@@ -38,9 +38,6 @@ const parseHomeDetails = (data, accessToken) => {
     const homeId = data.homeId
     const devices = [];
 
-    this.trace("boooooo");
-
-    this.debug("Log something more details for debugging the node's behaviour");
     data.spaces.map(s => {
         const devicesInSpace = s.devices.map(d => {
             const deviceName = getFormattedName(d.deviceName);
