@@ -20,7 +20,7 @@ const publishDisoveryMessages = () => {
 };
 
 const onConnected = () => {
-    Logger.logDebug('HA broker connected.');
+    Logger.logInfo('HA broker connected.');
     publishDisoveryMessages();
     mqttHelper.subscribe(topics, { qos: 2 });
 };

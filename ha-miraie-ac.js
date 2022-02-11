@@ -2,7 +2,6 @@ const axios = require('axios')
 const HABroker = require('./ha-broker');
 const MiraieBroker = require('./miraie-broker');
 const Logger = require('./logger');
-const logger = require('./logger');
 
 const constants = {
     httpClientId: 'PBcMcfG19njNCL8AOgvRzIC8AjQa',
@@ -24,7 +23,7 @@ const getScope = () => `an_${Math.floor(Math.random() * 1000000000)}`;
 
 const parseLoginResponse = (resp) => new Promise((resolve, reject) => {
     if (resp && resp.data && resp.data.userId && resp.data.accessToken) {
-        Logger.logDebug("Login successful!");
+        Logger.logInfo("Login successful!");
         resolve({
             userId: resp.data.userId,
             accessToken: resp.data.accessToken
@@ -60,7 +59,7 @@ const parseHomeDetails = (data, accessToken) => {
         devices.push(...devicesInSpace);
     });
 
-    Logger.logDebug({ message: `Discovered ${devices.length} devices.`, devices: devices.map(d => d.friendlyName) });
+    Logger.logInfo({ message: `Discovered ${devices.length} devices.`, devices: devices.map(d => d.friendlyName) });
 
     return {
         homeId,
