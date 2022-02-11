@@ -16,7 +16,7 @@ const generateRandomNumber = (len) => Math.floor(Math.random() * Math.pow(10, le
 const generateClientId = () => `an${generateRandomNumber(16)}${generateRandomNumber(5)}`;
 
 const onConnected = () => {
-    Logger.logDebug('MirAIe broker connected.');
+    Logger.logInfo('MirAIe broker connected.');
     mqttHelper.subscribe(topics, { qos: 0 });
 }
 
