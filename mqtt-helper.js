@@ -28,6 +28,10 @@ MqttHelper.prototype.connect = function (host, port, clientId, useSSL, username,
     }
 };
 
+MqttHelper.prototype.disconnect = function () {
+    this._client.end();
+};
+
 MqttHelper.prototype.subscribe = function (topics, options) {
     this._client.subscribe(topics, options);
 };
