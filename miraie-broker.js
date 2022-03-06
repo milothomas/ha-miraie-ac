@@ -129,3 +129,7 @@ MiraieBroker.prototype.publish = function (device, command, commandTopic) {
     const messages = generateMessages(device.controlTopic, command, cmdType, basePayload);
     messages.map(m => mqttHelper.publish(m.topic, m.payload, 0, false, onPublishCompleted));
 };
+
+MiraieBroker.prototype.disconnect = function() {
+    mqttHelper.disconnect();
+};

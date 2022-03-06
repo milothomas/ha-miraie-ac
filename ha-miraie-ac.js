@@ -161,6 +161,18 @@ const isConfigValid = () => {
     return true;
 }
 
+const disconnectBrokers = (homeDetails) => {
+    if(haBroker) {
+        haBroker.disconnect();
+        Logger.logInfo('HA Broker disconnected')
+    }
+
+    if(miraieBroker) {
+        miraieBroker.disconnect();
+        Logger.logInfo('MirAIe Broker disconnected')
+    }
+};
+
 module.exports = function (RED) {
     function MirAIeNode(config) {
         RED.nodes.createNode(this, config);
@@ -193,6 +205,10 @@ module.exports = function (RED) {
             });
 
         this.status({ fill: "green", shape: "dot", text: "Connected." });
+
+        this.on('close', function() {
+            disconnectBrokers();
+        });
     }
 
     RED.nodes.registerType("ha-miraie-ac", MirAIeNode, {

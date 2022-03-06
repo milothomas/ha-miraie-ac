@@ -107,3 +107,7 @@ HABroker.prototype.publishConnectionStatus = function (device, state) {
     const messages = generateAvailabilityMessage(device, stateObj);
     messages.map(m => publishMessage(m.topic, m.payload));
 };
+
+HABroker.prototype.disconnect = function() {
+    mqttHelper.disconnect();
+};
