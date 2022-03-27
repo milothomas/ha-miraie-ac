@@ -7,6 +7,7 @@ const constants = {
     httpClientId: 'PBcMcfG19njNCL8AOgvRzIC8AjQa',
     loginUrl: 'https://auth.miraie.in/simplifi/v1/userManagement/login',
     homesUrl: 'https://app.miraie.in/simplifi/v1/homeManagement/homes',
+    statusUrl: 'https://app.miraie.in/simplifi/v1/deviceManagement/devices/{deviceId}/mobile/status',
     mirAIeBrokerHost: 'mqtt.miraie.in',
     mirAIeBrokerPort: 8883,
     userCleanSession: false,
@@ -111,18 +112,18 @@ const login = (mobile, password) => {
             clientId: constants.httpClientId,
             scope: getScope()
         })
-        .then(resp => parseLoginResponse(resp))
-        .catch(e => {
-            throw new Error('Error logging in. ' + e);
-        });
+        .then(resp => parseLoginResponse(resp));
 };
 
+const buildHttpConfig = (accessToken) => ({
+    headers: {
+        Authorization: `Bearer ${accessToken}`
+    }
+});
+
+
 const getHomeDetails = (accessToken) => {
-    const config = {
-        headers: {
-            Authorization: `Bearer ${accessToken}`
-        }
-    };
+    const config = buildHttpConfig(accessToken);
 
     return axios
         .get(constants.homesUrl, config)
@@ -131,8 +132,36 @@ const getHomeDetails = (accessToken) => {
                 return parseHomeDetails(resp.data[0], accessToken);
             }
 
-            throw new Error('No devices added');
+            throw new Error('There was an error getting Home details.');
         });
+};
+
+const publishDeviceStatus = (data, device) => {
+    haBroker.publishState(device, JSON.stringify(data));
+    haBroker.publishConnectionStatus(device, JSON.stringify(data));
+
+    return new Promise(resolve => resolve({}));
+};
+
+
+const parseDeviceStatusResponse = (resp, device) => new Promise((resolve, reject) => {
+    if (resp && resp.data) {
+        resolve({
+            device: device,
+            data: resp.data
+        });
+    } else {
+        reject('Unable to parse device status.');
+    }
+});
+
+const getDeviceStatus = (device, accessToken) => {
+    const config = buildHttpConfig(accessToken);
+    const url = constants.statusUrl.replace('{deviceId}', device.id);
+
+    return axios
+        .get(url, config)
+        .then(resp => parseDeviceStatusResponse(resp, device));
 };
 
 const isConfigValid = () => {
@@ -177,6 +206,7 @@ module.exports = function (RED) {
     function MirAIeNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
+        let accessToken;
 
         Logger.initialize(node, config.logLevel, logToSidebar);
 
@@ -197,10 +227,13 @@ module.exports = function (RED) {
 
         Logger.logInfo('Starting MirAIe node...');
         login(this.credentials.mobile, this.credentials.password)
-            .then(userDetiails => getHomeDetails(userDetiails.accessToken))
+            .then(userDetiails => {
+                accessToken = userDetiails.accessToken;
+                return getHomeDetails(userDetiails.accessToken);
+            })
             .then(homeDetails => connectBrokers(homeDetails))
             .catch(e => {
-                this.status({ fill: "red", shape: "ring", text: "Error connecting." });
+                this.status({ fill: "red", shape: "ring", text: "Error connecting to MirAIe servers." });
                 node.error(e);
             });
 
@@ -208,6 +241,26 @@ module.exports = function (RED) {
 
         this.on('close', function() {
             disconnectBrokers();
+        });
+
+        this.on('input', function(msg) {
+            getHomeDetails(accessToken)
+            .then(homeDetails => {
+                homeDetails.devices.map(d => {
+                    Logger.logDebug('Getting status for device: ' + d.friendlyName);
+                    getDeviceStatus(d, accessToken)
+                    .then(status => publishDeviceStatus(status.data, status.device))
+                    .catch(e => {
+                        this.status({ fill: "red", shape: "ring", text: "Error getting device status." });
+                        node.error(e);
+                    });
+                    Logger.logDebug('Latest status published to HA for device: ' + d.friendlyName);
+                });
+                Logger.logInfo('Status published!')
+            }).catch(e => {
+                this.status({ fill: "red", shape: "ring", text: "Error connecting to MirAIe servers." });
+                node.error(e);
+            });
         });
     }
 
