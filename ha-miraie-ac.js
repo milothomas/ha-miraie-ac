@@ -104,14 +104,26 @@ const connectBrokers = (homeDetails) => {
     return new Promise(resolve => resolve({}));
 };
 
-const login = (mobile, password) => {
+const login = (authType, id, password) => {
+    var data = {
+        password,
+        clientId: constants.httpClientId,
+        scope: getScope()
+    };
+
+    switch (authType) {
+        case 'email':
+            data.email = id;
+            break;
+        case 'username':
+            data.userName = id;
+            break;
+        default:
+            data.mobile = id;
+    }
+
     return axios
-        .post(constants.loginUrl, {
-            mobile,
-            password,
-            clientId: constants.httpClientId,
-            scope: getScope()
-        })
+        .post(constants.loginUrl, data)
         .then(resp => parseLoginResponse(resp));
 };
 
@@ -210,6 +222,7 @@ module.exports = function (RED) {
 
         Logger.initialize(node, config.logLevel, logToSidebar);
 
+        settings.authType = config.authType;
         settings.mobile = this.credentials.mobile;
         settings.password = this.credentials.password;
         settings.haBrokerHost = config.haBrokerHost;
@@ -226,7 +239,7 @@ module.exports = function (RED) {
         }
 
         Logger.logInfo('Starting MirAIe node...');
-        login(this.credentials.mobile, this.credentials.password)
+        login(config.authType, this.credentials.mobile, this.credentials.password)
             .then(userDetiails => {
                 accessToken = userDetiails.accessToken;
                 return getHomeDetails(userDetiails.accessToken);

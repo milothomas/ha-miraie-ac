@@ -4,6 +4,7 @@
         color: '#a6bbcf',
         defaults: {
             name: { value: "MirAIe" },
+            authType: { value: "mobile" },
             haBrokerHost: { value: "" },
             haBrokerPort: { value: "1883", validate:RED.validators.number() },
             useCleanSession: { value: "true" },
@@ -22,8 +23,26 @@
         paletteLabel: "HA MirAIe",
         label: function () {
             return this.name || "ha-miraie-ac";
+        },
+        oneditprepare: function() {
+            var node = this;
+
+            const $authType = $('#node-input-authType');
+            const currentValue = $authType.val();
+            
+            if(!currentValue) {
+                $authType.val('mobile');
+                $authType.trigger('change');
+            }
         }
     });
+
+    function onAuthTypeChanged(element) {
+        const text = element.options[element.selectedIndex].innerHTML;
+        const newHtml = `<i class="fa fa-tag"></i> ${text}`;
+
+        $('#lblAuthId').html(newHtml);
+    };
 </script>
 
 <script type="text/html" data-template-name="ha-miraie-ac">
@@ -42,7 +61,16 @@
     </div>
 
     <div class="form-row">
-        <label for="node-input-mobile"><i class="fa fa-tag"></i> Mobile</label>
+        <label for="node-input-authType"><i class="fa fa-tag"></i> Auth Type</label>
+        <select id="node-input-authType" onchange="onAuthTypeChanged(this)">
+            <option value="mobile">Mobile</option>
+            <option value="email">Email</option>
+            <option value="username">Username</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-mobile" id="lblAuthId"><i class="fa fa-tag"></i> **placeholder**</label>
         <input type="text" id="node-input-mobile" placeholder="e.g. +91xxxxxxxxxx" required>
     </div>
 
