@@ -34,7 +34,6 @@ const generateConfigPayload = (device) => {
         
         modes: ["auto", "cool", "dry", "fan_only", "off"],
         fan_modes: ["auto", "quiet", "low", "medium", "high"],
-
     };
 }
 
