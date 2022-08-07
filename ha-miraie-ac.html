@@ -1,136 +1,136 @@
 <script type="text/javascript">
-    RED.nodes.registerType('ha-miraie-ac', {
-        category: 'MirAIe',
-        color: '#a6bbcf',
-        defaults: {
-            name: { value: "MirAIe" },
-            authType: { value: "mobile" },
-            haBrokerHost: { value: "" },
-            haBrokerPort: { value: "1883", validate:RED.validators.number() },
-            useCleanSession: { value: "true" },
-            useSsl: { value: "false" },
-            logLevel: { value: "INFO" }
-        },
-        credentials: {
-            mobile: { type: "text" },
-            password: { type: "password" },
-            haBrokerUsername: { type: "text" },
-            haBrokerPassword: { type: "password" },
-        },
-        inputs: 1,
-        outputs: 0,
-        icon: "font-awesome/fa-snowflake-o",
-        paletteLabel: "HA MirAIe",
-        label: function () {
-            return this.name || "ha-miraie-ac";
-        },
-        oneditprepare: function() {
-            var node = this;
+  RED.nodes.registerType('ha-miraie-ac', {
+    category: 'MirAIe',
+    color: '#a6bbcf',
+    defaults: {
+      name: { value: 'MirAIe' },
+      authType: { value: 'mobile' },
+      haBrokerHost: { value: '' },
+      haBrokerPort: { value: '1883', validate: RED.validators.number() },
+      useCleanSession: { value: 'true' },
+      useSsl: { value: 'false' },
+      logLevel: { value: 'INFO' }
+    },
+    credentials: {
+      mobile: { type: 'text' },
+      password: { type: 'password' },
+      haBrokerUsername: { type: 'text' },
+      haBrokerPassword: { type: 'password' }
+    },
+    inputs: 1,
+    outputs: 0,
+    icon: 'font-awesome/fa-snowflake-o',
+    paletteLabel: 'HA MirAIe',
+    label: function () {
+      return this.name || 'ha-miraie-ac';
+    },
+    oneditprepare: function () {
+      var node = this;
 
-            const $authType = $('#node-input-authType');
-            const currentValue = $authType.val();
-            
-            if(!currentValue) {
-                $authType.val('mobile');
-                $authType.trigger('change');
-            }
-        }
-    });
+      const $authType = $('#node-input-authType');
+      const currentValue = $authType.val();
 
-    function onAuthTypeChanged(element) {
-        const text = element.options[element.selectedIndex].innerHTML;
-        const newHtml = `<i class="fa fa-tag"></i> ${text}`;
+      if (!currentValue) {
+        $authType.val('mobile');
+        $authType.trigger('change');
+      }
+    }
+  });
 
-        $('#lblAuthId').html(newHtml);
-    };
+  function onAuthTypeChanged(element) {
+    const text = element.options[element.selectedIndex].innerHTML;
+    const newHtml = `<i class="fa fa-tag"></i> ${text}`;
+
+    $('#lblAuthId').html(newHtml);
+  }
 </script>
 
 <script type="text/html" data-template-name="ha-miraie-ac">
-    <div class="form-row">
-        <label style="width: 100%;font-weight: bold;">General</label>
-    </div>
-    
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name" required>
-    </div>
+  <div class="form-row">
+    <label style="width: 100%;font-weight: bold;">General</label>
+  </div>
 
-    <hr align="middle">
-    <div class="form-row">
-        <label style="width: 100%;font-weight: bold;">MirAIe Authentication</label>
-    </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" required />
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-authType"><i class="fa fa-tag"></i> Auth Type</label>
-        <select id="node-input-authType" onchange="onAuthTypeChanged(this)">
-            <option value="mobile">Mobile</option>
-            <option value="email">Email</option>
-            <option value="username">Username</option>
-        </select>
-    </div>
+  <hr align="middle" />
+  <div class="form-row">
+    <label style="width: 100%;font-weight: bold;">MirAIe Authentication</label>
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-mobile" id="lblAuthId"><i class="fa fa-tag"></i> **placeholder**</label>
-        <input type="text" id="node-input-mobile" placeholder="e.g. +91xxxxxxxxxx" required>
-    </div>
+  <div class="form-row">
+    <label for="node-input-authType"><i class="fa fa-tag"></i> Auth Type</label>
+    <select id="node-input-authType" onchange="onAuthTypeChanged(this)">
+      <option value="mobile">Mobile</option>
+      <option value="email">Email</option>
+      <option value="username">Username</option>
+    </select>
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-password"><i class="fa fa-tag"></i> Password</label>
-        <input type="password" id="node-input-password" placeholder="Password" required>
-    </div>
+  <div class="form-row">
+    <label for="node-input-mobile" id="lblAuthId"><i class="fa fa-tag"></i> **placeholder**</label>
+    <input type="text" id="node-input-mobile" placeholder="e.g. +91xxxxxxxxxx" required />
+  </div>
 
-    <hr align="middle">
-    <div class="form-row">
-        <label style="width: 100%;font-weight: bold;">Home Assistant MQTT Broker</label>
-    </div>
-    <div class="form-row">
-        <label for="node-input-haBrokerHost"><i class="fa fa-tag"></i> Host</label>
-        <input type="text" id="node-input-haBrokerHost" placeholder="e.g. localhost" required>
-    </div>
+  <div class="form-row">
+    <label for="node-input-password"><i class="fa fa-tag"></i> Password</label>
+    <input type="password" id="node-input-password" placeholder="Password" required />
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-haBrokerPort"><i class="fa fa-tag"></i> Port</label>
-        <input type="text" id="node-input-haBrokerPort" placeholder="e.g. 1883" required>
-    </div>
+  <hr align="middle" />
+  <div class="form-row">
+    <label style="width: 100%;font-weight: bold;">Home Assistant MQTT Broker</label>
+  </div>
+  <div class="form-row">
+    <label for="node-input-haBrokerHost"><i class="fa fa-tag"></i> Host</label>
+    <input type="text" id="node-input-haBrokerHost" placeholder="e.g. localhost" required />
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-haBrokerUsername"><i class="fa fa-tag"></i> Username</label>
-        <input type="text" id="node-input-haBrokerUsername" placeholder="Username">
-    </div>
+  <div class="form-row">
+    <label for="node-input-haBrokerPort"><i class="fa fa-tag"></i> Port</label>
+    <input type="text" id="node-input-haBrokerPort" placeholder="e.g. 1883" required />
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-haBrokerPassword"><i class="fa fa-tag"></i> Password</label>
-        <input type="password" id="node-input-haBrokerPassword" placeholder="Password">
-    </div>
+  <div class="form-row">
+    <label for="node-input-haBrokerUsername"><i class="fa fa-tag"></i> Username</label>
+    <input type="text" id="node-input-haBrokerUsername" placeholder="Username" />
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-useCleanSession"><i class="fa fa-tag"></i> Clean Session</label>
-        <select id="node-input-useCleanSession">
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-        </select>
-    </div>
+  <div class="form-row">
+    <label for="node-input-haBrokerPassword"><i class="fa fa-tag"></i> Password</label>
+    <input type="password" id="node-input-haBrokerPassword" placeholder="Password" />
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-useSsl"><i class="fa fa-tag"></i> Use SSL/TLS</label>
-        <select id="node-input-useSsl">
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-        </select>
-    </div>
+  <div class="form-row">
+    <label for="node-input-useCleanSession"><i class="fa fa-tag"></i> Clean Session</label>
+    <select id="node-input-useCleanSession">
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-logLevel"><i class="fa fa-tag"></i> Log Level</label>
-        <select id="node-input-logLevel">
-            <option value="OFF">OFF</option>
-            <option value="DEBUG">DEBUG</option>
-            <option value="INFO">INFO</option>
-            <option value="WARN">WARN</option>
-            <option value="ERROR">ERROR</option>
-        </select>
-    </div>
+  <div class="form-row">
+    <label for="node-input-useSsl"><i class="fa fa-tag"></i> Use SSL/TLS</label>
+    <select id="node-input-useSsl">
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-logLevel"><i class="fa fa-tag"></i> Log Level</label>
+    <select id="node-input-logLevel">
+      <option value="OFF">OFF</option>
+      <option value="DEBUG">DEBUG</option>
+      <option value="INFO">INFO</option>
+      <option value="WARN">WARN</option>
+      <option value="ERROR">ERROR</option>
+    </select>
+  </div>
 </script>
 
 <script type="text/html" data-help-name="ha-miraie-ac">
-    <p>HA integration for Panasonic MirAIe Air Conditioners</p>
+  <p>HA integration for Panasonic MirAIe Air Conditioners</p>
 </script>
