@@ -3,12 +3,12 @@ let _debugMessage;
 let _logLevel;
 
 const LOG_LEVELS = {
-  OFF: { name: "OFF", value: 0 },
-  DEBUG: { name: "DEBUG", value: 10 },
-  INFO: { name: "INFO", value: 20 },
-  WARN: { name: "WARN", value: 30 },
-  ERROR: { name: "ERROR", value: 40 },
-  FATAL: { name: "FATAL", value: 99 },
+  OFF: { name: 'OFF', value: 0 },
+  DEBUG: { name: 'DEBUG', value: 10 },
+  INFO: { name: 'INFO', value: 20 },
+  WARN: { name: 'WARN', value: 30 },
+  ERROR: { name: 'ERROR', value: 40 },
+  FATAL: { name: 'FATAL', value: 99 }
 };
 
 module.exports = new Logger();
@@ -23,17 +23,12 @@ Logger.prototype.initialize = function (node, logLevel, callback) {
     _alias: node._alias,
     path: node._flow.path,
     name: node.name,
-    topic: "",
+    topic: ''
   };
 };
 
 const log = function (level, data) {
-  if (
-    !_callback ||
-    _logLevel == LOG_LEVELS.OFF ||
-    level.value < _logLevel.value
-  )
-    return;
+  if (!_callback || _logLevel == LOG_LEVELS.OFF || level.value < _logLevel.value) return;
 
   _debugMessage.msg = data;
   _callback({ ..._debugMessage, level });

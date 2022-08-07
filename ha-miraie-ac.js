@@ -1,4 +1,4 @@
-const Logger = require("./utilities/logger");
+const Logger = require('./utilities/logger');
 const Miraie = require('./api/miraie');
 const BrokerBridge = require('./broker/broker-bridge');
 
@@ -60,7 +60,7 @@ const handleError = (node, error) => {
 
 const setNodeStatus = (node, message) => {
   node.status({ fill: 'green', shape: 'dot', text: message });
-}
+};
 
 const setNodeError = (node, e, message) => {
   node.status({ fill: 'red', shape: 'ring', text: message });
@@ -79,7 +79,7 @@ const processHome = (node, home) => {
   Logger.logInfo(`Found ${devices.length} devices: ${deviceNames}`);
 
   _brokerBridge.initialize(home, settings);
-  setNodeStatus(node, 'Connected')
+  setNodeStatus(node, 'Connected');
 };
 
 const refreshStatus = node => {
@@ -112,11 +112,7 @@ module.exports = function (RED) {
       refreshStatus(node);
     });
 
-    _miraieApi.initialize(
-      config.authType,
-      node.credentials.mobile,
-      node.credentials.password
-    );
+    _miraieApi.initialize(config.authType, node.credentials.mobile, node.credentials.password);
     _miraieApi
       .getHomeDetails()
       .then(home => processHome(node, home))
