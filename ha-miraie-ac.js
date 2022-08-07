@@ -1,6 +1,6 @@
-const Logger = require('./logger');
-const Miraie = require('./miraie');
-const BrokerBridge = require('./broker-bridge');
+const Logger = require("./utilities/logger");
+const Miraie = require('./api/miraie');
+const BrokerBridge = require('./broker/broker-bridge');
 
 const settings = {};
 const _brokerBridge = new BrokerBridge();

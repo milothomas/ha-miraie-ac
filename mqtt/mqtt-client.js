@@ -1,12 +1,12 @@
 const mqtt = require("mqtt");
 
-module.exports = MqttHelper;
+module.exports = MqttClient;
 
-function MqttHelper() {
+function MqttClient() {
   this._client = null;
 }
 
-MqttHelper.prototype.connect = function (
+MqttClient.prototype.connect = function (
   host,
   port,
   clientId,
@@ -40,15 +40,15 @@ MqttHelper.prototype.connect = function (
   }
 };
 
-MqttHelper.prototype.disconnect = function () {
+MqttClient.prototype.disconnect = function () {
   this._client.end();
 };
 
-MqttHelper.prototype.subscribe = function (topics, options) {
+MqttClient.prototype.subscribe = function (topics, options) {
   this._client.subscribe(topics, options);
 };
 
-MqttHelper.prototype.publish = function (
+MqttClient.prototype.publish = function (
   topic,
   payload,
   qos = 0,

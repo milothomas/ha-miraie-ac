@@ -1,7 +1,7 @@
-const MqttHelper = require("./mqtt-helper");
-const Logger = require("./logger");
+const MqttClient = require("../mqtt/mqtt-client");
+const Logger = require("../utilities/logger");
 
-let mqttHelper;
+let mqttClient;
 let topics;
 let onStateChangedCallback;
 
@@ -25,7 +25,7 @@ const generateClientId = () =>
 
 const onConnected = () => {
   Logger.logInfo("MirAIe broker connected.");
-  mqttHelper.subscribe(topics, { qos: 0 });
+  mqttClient.subscribe(topics, { qos: 0 });
 };
 
 const onMessageReceieved = (topic, payload) => {
@@ -129,7 +129,7 @@ const generateMessages = (topic, command, cmdType, basePayload) => {
 module.exports = MiraieBroker;
 
 function MiraieBroker(commandTopics, onStateChanged) {
-  mqttHelper = new MqttHelper();
+  mqttClient = new MqttClient();
   topics = commandTopics;
   onStateChangedCallback = onStateChanged;
 }
@@ -139,7 +139,7 @@ MiraieBroker.prototype.connect = function (username, password) {
   const useSsl = brokerDetails.useSsl;
   const host = brokerDetails.host;
   const port = brokerDetails.port;
-  mqttHelper.connect(
+  mqttClient.connect(
     host,
     port,
     clientId,
@@ -163,11 +163,11 @@ MiraieBroker.prototype.publish = function (device, command, commandTopic) {
   );
   messages.map((m) => {
       console.log('publishing message: ' + JSON.stringify(m));
-      mqttHelper.publish(m.topic, m.payload, 0, false, onPublishCompleted);
+      mqttClient.publish(m.topic, m.payload, 0, false, onPublishCompleted);
     }
   );
 };
 
 MiraieBroker.prototype.disconnect = function () {
-  mqttHelper.disconnect();
+  mqttClient.disconnect();
 };

@@ -1,5 +1,5 @@
 
-module.exports = Discovery;
+module.exports = MqttDiscovery;
 
 const generateConfigPayload = (device) => {
     const deviceName = device.name;
@@ -37,9 +37,9 @@ const generateConfigPayload = (device) => {
     };
 }
 
-function Discovery() {}
+function MqttDiscovery() {}
 
-Discovery.prototype.generateDiscoMessage = function (device) {
+MqttDiscovery.prototype.generateDiscoMessage = function (device) {
     return {
         topic: `homeassistant/climate/${device.name}/config`,
         payload: generateConfigPayload(device),

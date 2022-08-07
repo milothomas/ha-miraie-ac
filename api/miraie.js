@@ -1,15 +1,15 @@
-const { default: axios } = require("axios");
-const Logger = require("./logger");
+const { default: axios } = require('axios');
+const Logger = require('../utilities/logger');
 
 let home;
 let authDetails;
 let accessToken;
 
 const constants = {
-  httpClientId: "PBcMcfG19njNCL8AOgvRzIC8AjQa",
-  loginUrl: "https://auth.miraie.in/simplifi/v1/userManagement/login",
-  homesUrl: "https://app.miraie.in/simplifi/v1/homeManagement/homes",
-  statusUrl: "https://app.miraie.in/simplifi/v1/deviceManagement/devices/{deviceId}/mobile/status",
+  httpClientId: 'PBcMcfG19njNCL8AOgvRzIC8AjQa',
+  loginUrl: 'https://auth.miraie.in/simplifi/v1/userManagement/login',
+  homesUrl: 'https://app.miraie.in/simplifi/v1/homeManagement/homes',
+  statusUrl: 'https://app.miraie.in/simplifi/v1/deviceManagement/devices/{deviceId}/mobile/status'
 };
 
 const getScope = () => `an_${Math.floor(Math.random() * 1000000000)}`;
@@ -18,10 +18,10 @@ const login = async function () {
   var data = {
     password: authDetails.password,
     clientId: constants.httpClientId,
-    scope: getScope(),
+    scope: getScope()
   };
 
-  data[authDetails.authType || "mobile"] = authDetails.userId;
+  data[authDetails.authType || 'mobile'] = authDetails.userId;
 
   const resp = await axios.post(constants.loginUrl, data);
   const user = parseLoginResponse(resp);
@@ -30,11 +30,11 @@ const login = async function () {
   return accessToken;
 };
 
-const parseLoginResponse = (resp) => {
+const parseLoginResponse = resp => {
   if (resp && resp.data && resp.data.userId && resp.data.accessToken) {
     return {
       userId: resp.data.userId,
-      accessToken: resp.data.accessToken,
+      accessToken: resp.data.accessToken
     };
   }
 
@@ -43,8 +43,8 @@ const parseLoginResponse = (resp) => {
 
 const buildHttpConfig = () => ({
   headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
+    Authorization: `Bearer ${accessToken}`
+  }
 });
 
 const getHomeDetails = async function () {
@@ -53,9 +53,9 @@ const getHomeDetails = async function () {
   return parseHomeDetails(response);
 };
 
-const getFormattedName = (name) => name.toLowerCase().replace(/\s/g, "-");
+const getFormattedName = name => name.toLowerCase().replace(/\s/g, '-');
 
-const parseHomeDetails = (response) => {
+const parseHomeDetails = response => {
   if (!response.data || response.data.length == 0) {
     return null;
   }
@@ -64,8 +64,8 @@ const parseHomeDetails = (response) => {
   const homeId = data.homeId;
   const devices = [];
 
-  data.spaces.map((s) => {
-    const devicesInSpace = s.devices.map((d) => {
+  data.spaces.map(s => {
+    const devicesInSpace = s.devices.map(d => {
       const deviceName = getFormattedName(d.deviceName);
       const device = {
         id: d.deviceId,
@@ -73,13 +73,11 @@ const parseHomeDetails = (response) => {
         friendlyName: d.deviceName,
         controlTopic: d.topic ? `${d.topic[0]}/control` : null,
         statusTopic: d.topic ? `${d.topic[0]}/status` : null,
-        connectionStatusTopic: d.topic
-          ? `${d.topic[0]}/connectionStatus`
-          : null,
+        connectionStatusTopic: d.topic ? `${d.topic[0]}/connectionStatus` : null,
         haStatusTopic: `miraie-ac/${deviceName}/state`,
         haAvailabilityTopic: `miraie-ac/${deviceName}/availability`,
         haActionTopic: `miraie-ac/${deviceName}/action`,
-        haCommandTopic: `miraie-ac/${deviceName}/+/set`,
+        haCommandTopic: `miraie-ac/${deviceName}/+/set`
       };
 
       return device;
@@ -93,9 +91,7 @@ const parseHomeDetails = (response) => {
 };
 
 const getDeviceStatus = function (url, config) {
-  return axios
-          .get(url, config)
-          .then(resp => resp.data);
+  return axios.get(url, config).then(resp => resp.data);
 };
 
 const getAllDeviceStatus = async function () {
@@ -103,7 +99,7 @@ const getAllDeviceStatus = async function () {
   const statusList = [];
   for (let i = 0; i < home.devices.length; i++) {
     const d = home.devices[i];
-    const url = constants.statusUrl.replace("{deviceId}", d.id);
+    const url = constants.statusUrl.replace('{deviceId}', d.id);
     const status = await getDeviceStatus(url, config);
     statusList.push({ ...d, status });
   }
@@ -111,12 +107,12 @@ const getAllDeviceStatus = async function () {
   return statusList;
 };
 
-const onLoginError = (e) => {
-  console.log("Error logging in. ", e);
+const onLoginError = e => {
+  console.log('Error logging in. ', e);
 };
 
-const onGetHomeDetailsError = (e) => {
-  console.log("Error getting home details. ", e);
+const onGetHomeDetailsError = e => {
+  console.log('Error getting home details. ', e);
 };
 
 module.exports = Miraie;
@@ -129,9 +125,9 @@ Miraie.prototype.initialize = (authType, userId, password) => {
 Miraie.prototype.getHomeDetails = () => {
   return login()
     .then(getHomeDetails, onLoginError)
-    .then((home) => home, onGetHomeDetailsError);
+    .then(home => home, onGetHomeDetailsError);
 };
 
 Miraie.prototype.getDeviceStatus = () => {
-  return getAllDeviceStatus().then((devices) => devices);
+  return getAllDeviceStatus().then(devices => devices);
 };
