@@ -1,5 +1,8 @@
 const { default: axios } = require('axios');
 const Logger = require('../utilities/logger');
+const LoginErrorMsg = 'There was an error logging in.';
+const HomeDetailsErrorMsg = 'There was an error getting home details.';
+const DeviceStatusErrorMsg = 'There was an error getting device status.';
 
 let home;
 let authDetails;
@@ -15,6 +18,8 @@ const constants = {
 const getScope = () => `an_${Math.floor(Math.random() * 1000000000)}`;
 
 const login = async function () {
+  Logger.logDebug('Logging in to MirAIe.');
+
   var data = {
     password: authDetails.password,
     clientId: constants.httpClientId,
@@ -22,7 +27,6 @@ const login = async function () {
   };
 
   data[authDetails.authType || 'mobile'] = authDetails.userId;
-
   const resp = await axios.post(constants.loginUrl, data);
   const user = parseLoginResponse(resp);
   accessToken = user.accessToken;
@@ -48,6 +52,8 @@ const buildHttpConfig = () => ({
 });
 
 const getHomeDetails = async function () {
+  Logger.logDebug('Getting MirAIe Home details.');
+
   const config = buildHttpConfig();
   const response = await axios.get(constants.homesUrl, config);
   return parseHomeDetails(response);
@@ -90,11 +96,11 @@ const parseHomeDetails = response => {
   return home;
 };
 
-const getDeviceStatus = function (url, config) {
-  return axios.get(url, config).then(resp => resp.data);
-};
+const getDeviceStatus = (url, config) => axios.get(url, config).then(resp => resp.data);
 
 const getAllDeviceStatus = async function () {
+  Logger.logDebug('Getting MirAIe device status.');
+
   const config = buildHttpConfig(accessToken);
   const statusList = [];
   for (let i = 0; i < home.devices.length; i++) {
@@ -107,12 +113,8 @@ const getAllDeviceStatus = async function () {
   return statusList;
 };
 
-const onLoginError = e => {
-  console.log('Error logging in. ', e);
-};
-
-const onGetHomeDetailsError = e => {
-  console.log('Error getting home details. ', e);
+const rethrow = (e, message) => {
+  throw {...e, message: `${message} ${e.message}`};
 };
 
 module.exports = Miraie;
@@ -124,10 +126,10 @@ Miraie.prototype.initialize = (authType, userId, password) => {
 
 Miraie.prototype.getHomeDetails = () => {
   return login()
-    .then(getHomeDetails, onLoginError)
-    .then(home => home, onGetHomeDetailsError);
+    .then(getHomeDetails, e => rethrow(e, LoginErrorMsg))
+    .then(home => home, e => rethrow(e, HomeDetailsErrorMsg));
 };
 
 Miraie.prototype.getDeviceStatus = () => {
-  return getAllDeviceStatus().then(devices => devices);
+  return getAllDeviceStatus().then(devices => devices, e => rethrow(e, DeviceStatusErrorMsg));
 };

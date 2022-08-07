@@ -27,7 +27,6 @@ const isConfigValid = () => {
   }
 
   if (errors.length) {
-    console.log(errors);
     Logger.logFatal({ message: 'Configuration error.', errors });
     return false;
   }
@@ -50,12 +49,7 @@ const initializeNode = (node, config) => {
 };
 
 const handleError = (node, error) => {
-  node.error(error);
-  node.status({
-    fill: 'red',
-    shape: 'ring',
-    text: 'Error getting data from MirAIe servers.'
-  });
+  setNodeError(node, error, 'Error getting data from MirAIe servers.')
 };
 
 const setNodeStatus = (node, message) => {
