@@ -7,42 +7,23 @@ let _miraieBroker;
 let _devices;
 
 const onMiraieStateChanged = function (topic, payload) {
-  console.log(`broker bridge: MirAIe msg received on topic: ${topic}`);
-  console.log(`broker bridge: payload: ${payload}`);
-
   const device = _devices.find(d => d.statusTopic === topic || d.connectionStatusTopic === topic);
   if (!device) return;
 
   device.status = JSON.parse(payload.toString());
+  Logger.logDebug(`Received update from MirAIe for ${device.friendlyName}.`);
 
-  if (device.statusTopic == topic) {
-    Logger.logDebug({
-      message: 'Status updated.',
-      device: device.friendlyName
-    });
+  if (device.statusTopic == topic) {    
     _haBroker.publishState(device);
   } else {
-    Logger.logDebug({
-      message: 'Availability updated.',
-      device: device.friendlyName
-    });
     _haBroker.publishConnectionStatus(device);
   }
 };
 
 const onHACommandReceieved = function (topic, payload) {
-  console.log(`broker bridge: HA msg received on topic: ${topic}`);
-  console.log(`broker bridge: payload: ${payload}`);
-
-  console.log(`device count: ${_devices.length}`);
   const device = _devices.find(d => topic.startsWith(`miraie-ac/${d.name}/`));
   if (device) {
-    Logger.logDebug({
-      message: 'Command received.',
-      device: device.friendlyName
-    });
-
-    console.log('publishing to miraie');
+    Logger.logDebug(`Received update from HA for ${device.friendlyName}.`);
     _miraieBroker.publish(device, payload.toString(), topic);
   }
 };
@@ -73,7 +54,7 @@ BrokerBridge.prototype.onMiraieStateChanged = function (topic, payload) {
 
 BrokerBridge.prototype.publishDeviceStatus = function (devices) {
   devices.map(device => {
-    console.log(`publishing status for ${device.friendlyName}: ${device.status}`);
+    Logger.logDebug(`Publishing status to HA for ${device.friendlyName}.`);
 
     _haBroker.publishState(device);
     _haBroker.publishConnectionStatus(device);
@@ -83,11 +64,11 @@ BrokerBridge.prototype.publishDeviceStatus = function (devices) {
 BrokerBridge.prototype.disconnectBrokers = function () {
   if (_haBroker) {
     _haBroker.disconnect();
-    Logger.logInfo('HA Broker disconnected');
+    Logger.logDebug('HA Broker disconnected.');
   }
 
   if (_miraieBroker) {
     _miraieBroker.disconnect();
-    Logger.logInfo('MirAIe Broker disconnected');
+    Logger.logDebug('MirAIe Broker disconnected.');
   }
 };

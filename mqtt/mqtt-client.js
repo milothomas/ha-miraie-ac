@@ -10,8 +10,6 @@ MqttClient.prototype.connect = function (host, port, clientId, useSSL, username,
   const protocol = useSSL === 'true' ? 'tls' : 'mqtt';
   const connectUrl = `${protocol}://${host}:${port}`;
 
-  console.log('connecting to broker: ' + connectUrl);
-
   this._client = mqtt.connect(connectUrl, {
     clientId,
     clean,

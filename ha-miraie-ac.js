@@ -125,6 +125,5 @@ module.exports = function (RED) {
   const logToSidebar = debugMsg => {
     var msg = RED.util.encodeObject(debugMsg, { maxLength: 1000 });
     RED.comms.publish('debug', msg);
-    console.log(debugMsg);
   };
 };

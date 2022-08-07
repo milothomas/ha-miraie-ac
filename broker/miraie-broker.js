@@ -33,18 +33,11 @@ const onMessageReceieved = (topic, payload) => {
 };
 
 const onPublishCompleted = e => {
-  console.log('publish completed. e=' + e);
-  if (e) {
-    console.error('Error publishing message to MirAIe. ' + e);
-  }
+  e && Logger.logError(`Error publishing message to MirAIe. ${e}`);
 };
 
-const buildBasePayload = device => {
-  return {
-    ki: 1,
-    cnt: 'an',
-    sid: '1'
-  };
+const buildBasePayload = () => {
+  return { ki: 1, cnt: 'an', sid: '1' };
 };
 
 const getCommandType = topic => {
@@ -141,7 +134,6 @@ MiraieBroker.prototype.publish = function (device, command, commandTopic) {
   const cmdType = getCommandType(commandTopic);
   const messages = generateMessages(device.controlTopic, command, cmdType, basePayload);
   messages.map(m => {
-    console.log('publishing message: ' + JSON.stringify(m));
     mqttClient.publish(m.topic, m.payload, 0, false, onPublishCompleted);
   });
 };

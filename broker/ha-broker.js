@@ -10,7 +10,6 @@ let discoveredDevices;
 let onCmdReceivedCallback;
 
 const publishMessage = (topic, payload) => {
-  console.log(`HA Broker publish. Message: ${typeof payload == 'object' ? JSON.stringify(payload) : payload}. Topic: ${topic}`);
   mqttClient.publish(topic, payload, 2, false, onPublishCompleted);
 };
 
@@ -28,19 +27,13 @@ const onConnected = () => {
 };
 
 const onMessageReceieved = (topic, payload) => {
-  console.log('HA Broker message recived');
-  console.log('topic:' + topic);
-  console.log('message: ' + payload);
-
   if (onCmdReceivedCallback) {
     onCmdReceivedCallback(topic, payload);
   }
 };
 
 const onPublishCompleted = e => {
-  if (e) {
-    console.error('Error publishing message to HA. ' + e);
-  }
+    e && Logger.logError(`Error publishing message to HA. ${e}`);
 };
 
 const getAction = state => {
@@ -70,6 +63,7 @@ const generateAvailabilityMessage = device => {
     payload: onlineStatus.toString() == 'true' ? 'online' : 'offline'
   };
 
+  Logger.logDebug(`Availability updated for ${device.friendlyName}: ${availabilityMsg.payload}`);
   return [availabilityMsg];
 };
 
