@@ -4,7 +4,7 @@ const generateConfigPayload = device => {
   const deviceName = device.name;
   const stateTopic = `miraie-ac/${deviceName}/state`;
 
-  return {
+  const discoMsg = {
     name: device.friendlyName,
     unique_id: deviceName,
     mode_cmd_t: `miraie-ac/${deviceName}/mode/set`,
@@ -33,8 +33,17 @@ const generateConfigPayload = device => {
     fan_mode_stat_tpl: '{{ value_json.acfs }}',
 
     modes: ['auto', 'cool', 'dry', 'fan_only', 'off'],
-    fan_modes: ['auto', 'quiet', 'low', 'medium', 'high']
+    fan_modes: ['auto', 'quiet', 'low', 'medium', 'high'],
+    dev: {
+      ids: [device.id, device.details.macAddress],
+      mf: device.details.brand,
+      name: device.friendlyName,
+      mdl: device.details.modelNumber,
+      sw: device.details.firmwareVersion
+    }
   };
+
+  return discoMsg;
 };
 
 function MqttDiscovery() {}
