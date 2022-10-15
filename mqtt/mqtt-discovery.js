@@ -46,11 +46,41 @@ const generateConfigPayload = device => {
   return discoMsg;
 };
 
+const generateDailyPowerConsumptionPayload = device => {
+  const deviceName = device.name;
+  const stateTopic = `miraie-ac/${deviceName}/daily-power-consumption/state`;
+
+  const discoMsg = {
+    name: `Daily Power Consumption - ${device.friendlyName}`,
+    unique_id: `daily-power-consumption-${deviceName}`,
+    mode_stat_t: stateTopic,
+    mode_stat_tpl:
+      "{% set mode = value_json.acmd %}{% set power = value_json.ps %}{%- if power == 'off' -%} off {%- else -%} {{ 'fan_only' if mode == 'fan' else mode }} {%- endif -%}",
+    avty_t: `miraie-ac/${deviceName}/availability`,
+    pl_avail: 'online',
+    pl_not_avail: 'offline',
+
+    dev: {
+      ids: [device.id, device.details.macAddress],
+      mf: device.details.brand,
+      name: device.friendlyName,
+      mdl: device.details.modelNumber,
+      sw: device.details.firmwareVersion
+    }
+  };
+
+  return discoMsg;
+};
+
 function MqttDiscovery() {}
 
 MqttDiscovery.prototype.generateDiscoMessage = function (device) {
-  return {
-    topic: `homeassistant/climate/${device.name}/config`,
-    payload: generateConfigPayload(device)
-  };
+  return [{
+      topic: `homeassistant/climate/${device.name}/config`,
+      payload: generateConfigPayload(device)
+    }, {
+      topic: `homeassistant/sensor/${device.name}/power-consumption/config`,
+      payload: generateConfigPayload(device)
+    }
+  ];
 };
