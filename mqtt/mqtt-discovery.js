@@ -34,6 +34,32 @@ const generateConfigPayload = device => {
 
     modes: ['auto', 'cool', 'dry', 'fan_only', 'off'],
     fan_modes: ['auto', 'quiet', 'low', 'medium', 'high'],
+
+    dev: {
+      ids: [device.id, device.details.macAddress],
+      mf: device.details.brand,
+      name: device.friendlyName,
+      mdl: device.details.modelNumber,
+      sw: device.details.firmwareVersion
+    }
+  };
+
+  return discoMsg;
+};
+
+const generateMonthlyPowerConsumptionPayload = device => {
+  const deviceName = device.name;
+  const stateTopic = `miraie-ac/${deviceName}/monthly-power-consumption/state`;
+
+  const discoMsg = {
+    name: `Monthly Power Consumption`,
+    unique_id: `monthly-power-consumption-${deviceName}`,
+    avty_t: `miraie-ac/${deviceName}/availability`,
+    pl_avail: 'online',
+    pl_not_avail: 'offline',
+    unit_of_meas: 'kWh',
+    dev_cla: 'energy',
+    stat_t: stateTopic,
     dev: {
       ids: [device.id, device.details.macAddress],
       mf: device.details.brand,
@@ -51,15 +77,14 @@ const generateDailyPowerConsumptionPayload = device => {
   const stateTopic = `miraie-ac/${deviceName}/daily-power-consumption/state`;
 
   const discoMsg = {
-    name: `Daily Power Consumption - ${device.friendlyName}`,
+    name: `Daily Power Consumption`,
     unique_id: `daily-power-consumption-${deviceName}`,
-    mode_stat_t: stateTopic,
-    mode_stat_tpl:
-      "{% set mode = value_json.acmd %}{% set power = value_json.ps %}{%- if power == 'off' -%} off {%- else -%} {{ 'fan_only' if mode == 'fan' else mode }} {%- endif -%}",
     avty_t: `miraie-ac/${deviceName}/availability`,
     pl_avail: 'online',
     pl_not_avail: 'offline',
-
+    unit_of_meas: 'kWh',
+    dev_cla: 'energy',
+    stat_t: stateTopic,
     dev: {
       ids: [device.id, device.details.macAddress],
       mf: device.details.brand,
@@ -79,8 +104,11 @@ MqttDiscovery.prototype.generateDiscoMessage = function (device) {
       topic: `homeassistant/climate/${device.name}/config`,
       payload: generateConfigPayload(device)
     }, {
-      topic: `homeassistant/sensor/${device.name}/power-consumption/config`,
-      payload: generateConfigPayload(device)
+      topic: `homeassistant/sensor/monthly-power-consumption/${device.name}/config`,
+      payload: generateMonthlyPowerConsumptionPayload(device)
+    }, {
+      topic: `homeassistant/sensor/daily-power-consumption/${device.name}/config`,
+      payload: generateDailyPowerConsumptionPayload(device)
     }
   ];
 };

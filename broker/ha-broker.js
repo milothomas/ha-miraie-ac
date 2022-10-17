@@ -10,13 +10,16 @@ let discoveredDevices;
 let onCmdReceivedCallback;
 
 const publishMessage = (topic, payload) => {
-  mqttClient.publish(topic, payload, 2, false, onPublishCompleted);
+  mqttClient.publish(topic, payload, 0, false, onPublishCompleted);
 };
 
 const publishDisoveryMessages = () => {
   discoveredDevices.map(d => {
-    const msg = mqttDisco.generateDiscoMessage(d);
-    publishMessage(msg.topic, msg.payload);
+    const messages = mqttDisco.generateDiscoMessage(d);
+    
+    messages.map(m => {
+      publishMessage(m.topic, m.payload);
+    });
   });
 };
 
@@ -78,7 +81,17 @@ const generateStateMessages = device => {
     payload: JSON.stringify(device.status)
   };
 
-  return [actionMsg, statusMsg];
+  const monthlyPowerConsMsg = {
+    topic: device.haMonthlyPwrTopic,
+    payload: device.consumption.monthly.toString()
+  }
+
+  const dailyPowerConsMsg = {
+    topic: device.haDailyPwrTopic,
+    payload: device.consumption.daily.toString()
+  }
+
+  return [actionMsg, statusMsg, monthlyPowerConsMsg, dailyPowerConsMsg];
 };
 
 module.exports = HABroker;

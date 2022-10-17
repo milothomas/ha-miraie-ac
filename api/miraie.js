@@ -14,7 +14,9 @@ const constants = {
   loginUrl: 'https://auth.miraie.in/simplifi/v1/userManagement/login',
   homesUrl: 'https://app.miraie.in/simplifi/v1/homeManagement/homes',
   statusUrl: 'https://app.miraie.in/simplifi/v1/deviceManagement/devices/{deviceId}/mobile/status',
-  deviceDetailsUrl: 'https://app.miraie.in/simplifi/v1/deviceManagement/devices/deviceId'
+  deviceDetailsUrl: 'https://app.miraie.in/simplifi/v1/deviceManagement/devices/deviceId',
+  monthlyPwrConsUrl: 'https://app.miraie.in/simplifi/v1/powerConsumption/devices/{deviceId}?grain=Monthly&startDate={date}&endDate={date}',
+  dailyPwrConsUrl: 'https://app.miraie.in/simplifi/v1/powerConsumption/devices/{deviceId}?grain=Daily&startDate={date}&endDate={date}'
 };
 
 const getScope = () => `an_${Math.floor(Math.random() * 1000000000)}`;
@@ -85,7 +87,9 @@ const parseHomeDetails = response => {
         haStatusTopic: `miraie-ac/${deviceName}/state`,
         haAvailabilityTopic: `miraie-ac/${deviceName}/availability`,
         haActionTopic: `miraie-ac/${deviceName}/action`,
-        haCommandTopic: `miraie-ac/${deviceName}/+/set`
+        haCommandTopic: `miraie-ac/${deviceName}/+/set`,
+        haMonthlyPwrTopic: `miraie-ac/${deviceName}/monthly-power-consumption/state`,
+        haDailyPwrTopic: `miraie-ac/${deviceName}/daily-power-consumption/state`
       };
 
       return device;
@@ -103,13 +107,71 @@ const getDeviceDetails = (deviceIds) => {
   return axios.get(`${constants.deviceDetailsUrl}/${deviceIds}`, config).then(resp => resp.data);
 }
 
+const getDate = (type = 'daily') => {
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  
+  let result = `0${month}${year}`.slice(-6);
+
+  if(type.toLowerCase() == 'daily') {
+    return `0${day}${result}`.slice(-8);
+  }
+
+  return result;
+}
+
+const getDeviceConsumption = async (deviceId) => {
+  const config = buildHttpConfig();
+  //const date = getDate();
+  //const url = constants.monthlyPwrConsUrl.replace('{deviceId}', deviceId).replace(/\{date\}/g, date);
+  //console.log('consumption Url: ', url );
+  //return axios.get(url, config).then(resp => resp.data);
+
+  const dailyUrl = constants.dailyPwrConsUrl.replace('{deviceId}', deviceId).replace(/\{date\}/g, getDate('daily'));
+  const monthlyUrl = constants.monthlyPwrConsUrl.replace('{deviceId}', deviceId).replace(/\{date\}/g, getDate('monthly'));
+
+
+  console.log(dailyUrl);
+  console.log(monthlyUrl);
+
+  // return Promise.all(async () => {
+  //   const dailyData = await axios.get(dailyUrl, config).then(resp => resp.data);
+  //   const monthlyData = await axios.get(monthlyUrl, config).then(resp => resp.data);
+
+  //   return {
+  //     daily: (dailyData && dailyData.length && dailyData[0].power) || 0,
+  //     monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0,
+  //   };
+  // });
+
+    const dailyData = await axios.get(dailyUrl, config).then(resp => resp.data);
+    const monthlyData = await axios.get(monthlyUrl, config).then(resp => resp.data);
+
+    return {
+      daily: (dailyData && dailyData.length && dailyData[0].power) || 0,
+      monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0
+    };
+}
+
+const getAllDeviceConsumption = async (deviceIds) => {
+  return await Promise.all(deviceIds.map(async id => {
+    const data = await getDeviceConsumption(id);
+    return { id, consumption: { daily: data.daily, monthly: data.monthly } };
+  }));
+}
+ 
+
 const populateDeviceDetails = async function () {
   const deviceIds = _home.devices.map(d => d.id).join(',');
   const deviceDetails = await getDeviceDetails(deviceIds) ;
+  const consumptionData = await getAllDeviceConsumption(deviceIds.split(','));
 
   _home.devices.map(d => {
     const details = deviceDetails.find(x => x.deviceId === d.id) || {};
-    
+    const consumption = consumptionData.find(x => x.id == d.id) || {};
+
     d.details = {
       modelName: details.modelName || '',
       macAddress: details.macAddress  || '',
@@ -120,6 +182,9 @@ const populateDeviceDetails = async function () {
       modelNumber: details.modelNumber || '',
       productSerialNumber: details.productSerialNumber || ''
     };
+
+    d.consumption = consumption.consumption || {};
+    console.log(`Consumption for ${d.name}: `, JSON.stringify(d.consumption));
   });
 
   return _home;
