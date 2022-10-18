@@ -102,70 +102,52 @@ const parseHomeDetails = response => {
   return _home;
 };
 
-const getDeviceDetails = (deviceIds) => {
+const getDeviceDetails = deviceIds => {
   const config = buildHttpConfig();
   return axios.get(`${constants.deviceDetailsUrl}/${deviceIds}`, config).then(resp => resp.data);
-}
+};
 
 const getDate = (type = 'daily') => {
   const now = new Date();
   const day = now.getDate();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  
+
   let result = `0${month}${year}`.slice(-6);
 
-  if(type.toLowerCase() == 'daily') {
+  if (type.toLowerCase() == 'daily') {
     return `0${day}${result}`.slice(-8);
   }
 
   return result;
-}
+};
 
-const getDeviceConsumption = async (deviceId) => {
+const getDeviceConsumption = async deviceId => {
   const config = buildHttpConfig();
-  //const date = getDate();
-  //const url = constants.monthlyPwrConsUrl.replace('{deviceId}', deviceId).replace(/\{date\}/g, date);
-  //console.log('consumption Url: ', url );
-  //return axios.get(url, config).then(resp => resp.data);
-
   const dailyUrl = constants.dailyPwrConsUrl.replace('{deviceId}', deviceId).replace(/\{date\}/g, getDate('daily'));
   const monthlyUrl = constants.monthlyPwrConsUrl.replace('{deviceId}', deviceId).replace(/\{date\}/g, getDate('monthly'));
 
+  const dailyData = await axios.get(dailyUrl, config).then(resp => resp.data);
+  const monthlyData = await axios.get(monthlyUrl, config).then(resp => resp.data);
 
-  console.log(dailyUrl);
-  console.log(monthlyUrl);
+  return {
+    daily: (dailyData && dailyData.length && dailyData[0].power) || 0,
+    monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0
+  };
+};
 
-  // return Promise.all(async () => {
-  //   const dailyData = await axios.get(dailyUrl, config).then(resp => resp.data);
-  //   const monthlyData = await axios.get(monthlyUrl, config).then(resp => resp.data);
-
-  //   return {
-  //     daily: (dailyData && dailyData.length && dailyData[0].power) || 0,
-  //     monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0,
-  //   };
-  // });
-
-    const dailyData = await axios.get(dailyUrl, config).then(resp => resp.data);
-    const monthlyData = await axios.get(monthlyUrl, config).then(resp => resp.data);
-
-    return {
-      daily: (dailyData && dailyData.length && dailyData[0].power) || 0,
-      monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0
-    };
-}
-
-const getAllDeviceConsumption = async (deviceIds) => {
-  return await Promise.all(deviceIds.map(async id => {
-    const data = await getDeviceConsumption(id);
-    return { id, consumption: { daily: data.daily, monthly: data.monthly } };
-  }));
-}
- 
+const getAllDeviceConsumption = async deviceIds => {
+  return await Promise.all(
+    deviceIds.map(async id => {
+      const data = await getDeviceConsumption(id);
+      return { id, consumption: { daily: data.daily, monthly: data.monthly } };
+    })
+  );
+};
 
 const populateDeviceDetails = async function () {
   const deviceIds = _home.devices.map(d => d.id).join(',');
-  const deviceDetails = await getDeviceDetails(deviceIds) ;
+  const deviceDetails = await getDeviceDetails(deviceIds);
   const consumptionData = await getAllDeviceConsumption(deviceIds.split(','));
 
   _home.devices.map(d => {
@@ -174,9 +156,9 @@ const populateDeviceDetails = async function () {
 
     d.details = {
       modelName: details.modelName || '',
-      macAddress: details.macAddress  || '',
-      category: details.category  || '',
-      brand: details.brand  || '',
+      macAddress: details.macAddress || '',
+      category: details.category || '',
+      brand: details.brand || '',
       firmwareVersion: details.firmwareVersion || '',
       serialNumber: details.serialNumber || '',
       modelNumber: details.modelNumber || '',
@@ -184,11 +166,10 @@ const populateDeviceDetails = async function () {
     };
 
     d.consumption = consumption.consumption || {};
-    console.log(`Consumption for ${d.name}: `, JSON.stringify(d.consumption));
   });
 
   return _home;
-}
+};
 
 const getDeviceStatus = (url, config) => axios.get(url, config).then(resp => resp.data);
 
