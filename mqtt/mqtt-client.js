@@ -1,4 +1,5 @@
 const mqtt = require('mqtt');
+const Logger = require('../utilities/logger');
 
 module.exports = MqttClient;
 
@@ -26,6 +27,12 @@ MqttClient.prototype.connect = function (host, port, clientId, useSSL, username,
   if (onMessage) {
     this._client.on('message', onMessage);
   }
+
+  this._client.on('disconnect', () => { Logger.logDebug(`MQTT Client disconnected from ${host}`); });
+
+  this._client.on('error', () => { Logger.logDebug(`MQTT Client encountered and error on ${host}`); });
+
+  this._client.on('close', () => { Logger.logDebug(`MQTT Client connection closed on ${host}`); });
 };
 
 MqttClient.prototype.disconnect = function () {
@@ -38,6 +45,5 @@ MqttClient.prototype.subscribe = function (topics, options) {
 
 MqttClient.prototype.publish = function (topic, payload, qos = 0, retain = false, onPublishCompleted) {
   const message = typeof payload === 'object' ? JSON.stringify(payload) : payload;
-
   this._client.publish(topic, message, { qos, retain }, onPublishCompleted);
 };
