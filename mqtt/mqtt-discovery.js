@@ -5,6 +5,7 @@ const generateConfigPayload = device => {
   const stateTopic = `miraie-ac/${deviceName}/state`;
 
   const discoMsg = {
+    icon: 'mdi:air-conditioner',
     name: device.friendlyName,
     unique_id: deviceName,
     mode_cmd_t: `miraie-ac/${deviceName}/mode/set`,
@@ -52,14 +53,16 @@ const generateMonthlyPowerConsumptionPayload = device => {
   const stateTopic = `miraie-ac/${deviceName}/monthly-power-consumption/state`;
 
   const discoMsg = {
-    name: `Monthly Power Consumption`,
+    name: `Monthly Power Consumption - ${device.friendlyName}`,
     unique_id: `monthly-power-consumption-${deviceName}`,
     avty_t: `miraie-ac/${deviceName}/availability`,
     pl_avail: 'online',
     pl_not_avail: 'offline',
     unit_of_meas: 'kWh',
     dev_cla: 'energy',
+    state_class: 'total_increasing',
     stat_t: stateTopic,
+    icon: 'mdi:lightning-bolt',
     dev: {
       ids: [device.id, device.details.macAddress],
       mf: device.details.brand,
@@ -77,7 +80,7 @@ const generateDailyPowerConsumptionPayload = device => {
   const stateTopic = `miraie-ac/${deviceName}/daily-power-consumption/state`;
 
   const discoMsg = {
-    name: `Daily Power Consumption`,
+    name: `Daily Power Consumption - ${device.friendlyName}`,
     unique_id: `daily-power-consumption-${deviceName}`,
     avty_t: `miraie-ac/${deviceName}/availability`,
     pl_avail: 'online',
@@ -85,6 +88,7 @@ const generateDailyPowerConsumptionPayload = device => {
     unit_of_meas: 'kWh',
     dev_cla: 'energy',
     stat_t: stateTopic,
+    icon: 'mdi:lightning-bolt',
     dev: {
       ids: [device.id, device.details.macAddress],
       mf: device.details.brand,
