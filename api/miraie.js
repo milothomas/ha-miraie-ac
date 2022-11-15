@@ -107,18 +107,55 @@ const getDeviceDetails = deviceIds => {
   return axios.get(`${constants.deviceDetailsUrl}/${deviceIds}`, config).then(resp => resp.data);
 };
 
-const getDate = (type = 'daily') => {
+const getResetDate = (type = 'daily') => {
+  const date = type.toLowerCase() === 'daily' 
+    ? getDailyConsumptionDate()
+    : new Date();
+  
+  return getFormattedResetDate(date, type);
+}
+
+const getFormattedResetDate = (date = new Date(), type = 'daily') => {
+  const day = type === 'daily' ? date.getDate() : 1;
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  let result = `0${month}-${year}`.slice(-7);
+  result = `0${day}-${result}`.slice(-10);
+  return `${result}T00:00:00`;
+};
+
+const getDailyConsumptionDate = () => {
   const now = new Date();
-  const day = now.getDate();
+  const yesterday = new Date(now.getTime());
+  yesterday.setDate(now.getDate() - 1);
+
+  return yesterday;
+}
+
+const getDate = (type = 'daily') => {
+  return type.toLowerCase() == 'daily' 
+    ? getFormattedDailyConsumptionDate()
+    : getFormattedMonthlyConsumptionDate();
+};
+
+const getFormattedDailyConsumptionDate = () => {
+  const yesterday = getDailyConsumptionDate();
+
+  const day = yesterday.getDate();
+  const month = yesterday.getMonth() + 1;
+  const year = yesterday.getFullYear();
+
+  let result = `0${month}${year}`.slice(-6);
+  return `0${day}${result}`.slice(-8);
+};
+
+const getFormattedMonthlyConsumptionDate = () => {
+  const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
   let result = `0${month}${year}`.slice(-6);
-
-  if (type.toLowerCase() == 'daily') {
-    return `0${day}${result}`.slice(-8);
-  }
-
   return result;
 };
 
@@ -130,9 +167,11 @@ const getDeviceConsumption = async deviceId => {
   const dailyData = await axios.get(dailyUrl, config).then(resp => resp.data);
   const monthlyData = await axios.get(monthlyUrl, config).then(resp => resp.data);
 
-  return {
+    return {
     daily: (dailyData && dailyData.length && dailyData[0].power) || 0,
-    monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0
+    monthly: (monthlyData && monthlyData.length && monthlyData[0].power) || 0,
+    dailyResetDate: getResetDate('daily'),
+    monthlyResetDate: getResetDate('monthly')
   };
 };
 
@@ -140,7 +179,15 @@ const getAllDeviceConsumption = async deviceIds => {
   return await Promise.all(
     deviceIds.map(async id => {
       const data = await getDeviceConsumption(id);
-      return { id, consumption: { daily: data.daily, monthly: data.monthly } };
+      return { 
+        id, 
+        consumption: { 
+          daily: data.daily, 
+          monthly: data.monthly,
+          dailyResetDate: data.dailyResetDate, 
+          monthlyResetDate: data.monthlyResetDate 
+        }
+      };
     })
   );
 };
@@ -177,15 +224,16 @@ const getAllDeviceStatus = async function () {
   Logger.logDebug('Getting MirAIe device status.');
 
   const config = buildHttpConfig(_accessToken);
-  const statusList = [];
+  const devices = [];
   for (let i = 0; i < _home.devices.length; i++) {
     const d = _home.devices[i];
     const url = constants.statusUrl.replace('{deviceId}', d.id);
     const status = await getDeviceStatus(url, config);
-    statusList.push({ ...d, status });
+    const consumption = await getDeviceConsumption(d.id);
+    devices.push({ ...d, status, consumption });
   }
 
-  return statusList;
+  return devices;
 };
 
 const rethrow = (e, message) => {
