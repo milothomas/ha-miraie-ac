@@ -60,7 +60,8 @@ const generateMonthlyPowerConsumptionPayload = device => {
     pl_not_avail: 'offline',
     unit_of_meas: 'kWh',
     dev_cla: 'energy',
-    state_class: 'total_increasing',
+    state_class: 'total',
+    last_reset: device.consumption.monthlyResetDate,
     stat_t: stateTopic,
     icon: 'mdi:lightning-bolt',
     dev: {
@@ -87,6 +88,8 @@ const generateDailyPowerConsumptionPayload = device => {
     pl_not_avail: 'offline',
     unit_of_meas: 'kWh',
     dev_cla: 'energy',
+    state_class: 'total',
+    last_reset: device.consumption.dailyResetDate,
     stat_t: stateTopic,
     icon: 'mdi:lightning-bolt',
     dev: {
