@@ -21,7 +21,7 @@ const onMiraieStateChanged = function (topic, payload) {
 };
 
 const onHACommandReceieved = function (topic, payload) {
-  const device = _devices.find(d => topic.startsWith(`miraie-ac/${d.name}/`));
+  const device = _devices.find(d => topic.startsWith(`/ac/${d.name}/`));
   if (device) {
     Logger.logDebug(`Received update from HA for ${device.friendlyName}.`);
     _miraieBroker.publish(device, payload.toString(), topic);

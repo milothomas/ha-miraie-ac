@@ -71,6 +71,22 @@ const generateAvailabilityMessage = device => {
 };
 
 const generateStateMessages = device => {
+  let mode = device.status.acmd;
+  if(device.status.ps == 'off'){
+      mode = 'off';
+  }else if(device.status.acpm == "on"){
+      mode = "heat";
+  }else if(device.status.acmd == "fan"){
+      mode = "fan_only";
+  }
+  device.modeStatus = mode;
+  Logger.logDebug(`Power :${device.status.ps} , Mode: ${device.modeStatus}`);
+
+  const modeMsg = {
+    topic: device.haModeTopic,
+    payload: mode
+  };
+
   const actionMsg = {
     topic: device.haActionTopic,
     payload: getAction(device.status)
@@ -91,7 +107,7 @@ const generateStateMessages = device => {
     payload: device.consumption.daily.toString()
   }
 
-  return [actionMsg, statusMsg, monthlyPowerConsMsg, dailyPowerConsMsg];
+  return [modeMsg, statusMsg, monthlyPowerConsMsg, dailyPowerConsMsg];  //actionmsg removed
 };
 
 module.exports = HABroker;

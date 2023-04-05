@@ -81,15 +81,17 @@ const parseHomeDetails = response => {
         id: d.deviceId,
         name: deviceName,
         friendlyName: d.deviceName,
+        modeStatus : '',
         controlTopic: d.topic ? `${d.topic[0]}/control` : null,
         statusTopic: d.topic ? `${d.topic[0]}/status` : null,
         connectionStatusTopic: d.topic ? `${d.topic[0]}/connectionStatus` : null,
-        haStatusTopic: `miraie-ac/${deviceName}/state`,
-        haAvailabilityTopic: `miraie-ac/${deviceName}/availability`,
-        haActionTopic: `miraie-ac/${deviceName}/action`,
-        haCommandTopic: `miraie-ac/${deviceName}/+/set`,
-        haMonthlyPwrTopic: `miraie-ac/${deviceName}/monthly-power-consumption/state`,
-        haDailyPwrTopic: `miraie-ac/${deviceName}/daily-power-consumption/state`
+        haStatusTopic: `/ac/${deviceName}/status`,
+        haAvailabilityTopic: `/ac/${deviceName}/availability`,
+        haActionTopic: `/ac/${deviceName}/action`,
+        haCommandTopic: `/ac/${deviceName}/+/set`,
+        haModeTopic: `/ac/${deviceName}/mode/update`,
+        haMonthlyPwrTopic: `/ac/${deviceName}/monthly-power-consumption/state`,
+        haDailyPwrTopic: `/ac/${deviceName}/daily-power-consumption/state`
       };
 
       return device;

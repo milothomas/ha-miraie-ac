@@ -8,7 +8,8 @@ let onStateChangedCallback;
 const CMD_TYPES = {
   MODE: 'mode',
   TEMPERATURE: 'temp',
-  FAN: 'fan'
+  FAN: 'fan',
+  SWING: 'swing'
 };
 
 const brokerDetails = {
@@ -52,29 +53,87 @@ const getCommandType = topic => {
   if (topic.endsWith('/fan/set')) {
     return CMD_TYPES.FAN;
   }
+
+  if (topic.endsWith('/swing/set')) {
+    return CMD_TYPES.SWING;
+  }
 };
 
-const generateModeMessages = (basePayload, command, topic) => {
-  const powerMode = command == 'off' ? 'off' : 'on';
-  const acMode = command == 'fan_only' ? 'fan' : command;
+const generateModeMessages = (basePayload, command, topic, device) => {
+  if(command == "fan_only"){
+    command = "fan";
+  }
+  let powerMsg;
+  if(command == "off"){
+    powerMsg = {
+        topic,
+        payload: {
+            ...basePayload,
+            ps: "off"
+        }
+    };
+    return [powerMsg];
+  }else{
+    powerMsg = {
+      topic,
+      payload: {
+          ...basePayload,
+          ps: "on"
+      }
+    };
 
-  const powerMessage = {
-    topic,
-    payload: {
-      ...basePayload,
-      ps: powerMode
+    if(command == "heat"){
+      const modeMessage = {
+          topic,
+          payload: {
+              ...basePayload,
+              acmd: "cool"
+          }
+      };
+      const powerfulMessage = {
+          topic,
+          payload: {
+              ...basePayload,
+              acpm: "on"
+          }
+      };
+      if(device.status.ps == "off"){
+        return [powerMsg, modeMessage, powerfulMessage];
+      }else{
+        if(device.modeStatus == "cool"){
+          return [powerfulMessage];
+        }else{
+          return [modeMessage, powerfulMessage];
+        }
+      }
+
+    }else{
+      const modeMessage = {
+        topic,
+        payload: {
+            ...basePayload,
+            acmd: command
+        }
+      };
+      if(device.status.ps == "off"){
+        return [powerMsg, modeMessage];
+      }else{
+        if(device.status.acpm == "on" && command == "cool"){
+          const powerfulMessage = {
+              topic,
+              payload: {
+                  ...basePayload,
+                  acpm: "off"
+              }
+          };
+          return [powerfulMessage];
+        }else{
+          return [modeMessage];
+        }
+      }
+
     }
-  };
-
-  const modeMessage = {
-    topic,
-    payload: {
-      ...basePayload,
-      acmd: acMode
-    }
-  };
-
-  return [powerMessage, modeMessage];
+  }
 };
 
 const generateTemperatureMessage = (basePayload, command, topic) => {
@@ -101,14 +160,27 @@ const generateFanMessage = (basePayload, command, topic) => {
   ];
 };
 
-const generateMessages = (topic, command, cmdType, basePayload) => {
+const generateSwingMessage = (basePayload, command, topic) => {
+  return [{
+      topic,
+      payload: {
+          ...basePayload,
+          acvs: parseInt(command)
+      }
+  }];
+};
+
+const generateMessages = (device, command, cmdType, basePayload) => {
+  let topic = device.controlTopic;
   switch (cmdType) {
     case CMD_TYPES.MODE:
-      return generateModeMessages(basePayload, command.toLowerCase(), topic);
+      return generateModeMessages(basePayload, command.toLowerCase(), topic, device);
     case CMD_TYPES.TEMPERATURE:
       return generateTemperatureMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.FAN:
       return generateFanMessage(basePayload, command.toLowerCase(), topic);
+    case CMD_TYPES.SWING:
+      return generateSwingMessage(basePayload, command.toLowerCase(), topic);
   }
   return [];
 };
@@ -132,7 +204,7 @@ MiraieBroker.prototype.connect = function (username, password) {
 MiraieBroker.prototype.publish = function (device, command, commandTopic) {
   const basePayload = buildBasePayload(device);
   const cmdType = getCommandType(commandTopic);
-  const messages = generateMessages(device.controlTopic, command, cmdType, basePayload);
+  const messages = generateMessages(device, command, cmdType, basePayload);
   messages.map(m => {
     mqttClient.publish(m.topic, m.payload, 0, false, onPublishCompleted);
   });
