@@ -2,21 +2,20 @@ module.exports = MqttDiscovery;
 
 const generateConfigPayload = device => {
   const deviceName = device.name;
-  const stateTopic = `miraie-ac/${deviceName}/state`;
+  const stateTopic = `/ac/${deviceName}/status`;
 
   const discoMsg = {
     icon: 'mdi:air-conditioner',
     name: device.friendlyName,
     unique_id: deviceName,
-    mode_cmd_t: `miraie-ac/${deviceName}/mode/set`,
-    mode_stat_t: stateTopic,
-    mode_stat_tpl:
-      "{% set mode = value_json.acmd %}{% set power = value_json.ps %}{%- if power == 'off' -%} off {%- else -%} {{ 'fan_only' if mode == 'fan' else mode }} {%- endif -%}",
-    avty_t: `miraie-ac/${deviceName}/availability`,
+    mode_cmd_t: `/ac/${deviceName}/mode/set`,
+    mode_stat_t: `/ac/${deviceName}/mode/update`,
+    
+    avty_t: `/ac/${deviceName}/availability`,
     pl_avail: 'online',
     pl_not_avail: 'offline',
 
-    temp_cmd_t: `miraie-ac/${deviceName}/temp/set`,
+    temp_cmd_t: `/ac/${deviceName}/temp/set`,
     temp_stat_t: stateTopic,
     temp_stat_tpl: '{{ value_json.actmp }}',
 
@@ -26,15 +25,22 @@ const generateConfigPayload = device => {
     max_temp: '30',
     min_temp: '16',
 
-    act_t: `miraie-ac/${deviceName}/action`,
-    pow_cmd_t: `miraie-ac/${deviceName}/power/set`,
+    //act_t: `/ac/${deviceName}/action`,
+    pow_cmd_t: `/ac/${deviceName}/power/set`,
 
-    fan_mode_cmd_t: `miraie-ac/${deviceName}/fan/set`,
+    fan_mode_cmd_t: `/ac/${deviceName}/fan/set`,
     fan_mode_stat_t: stateTopic,
     fan_mode_stat_tpl: '{{ value_json.acfs }}',
 
-    modes: ['auto', 'cool', 'dry', 'fan_only', 'off'],
-    fan_modes: ['auto', 'quiet', 'low', 'medium', 'high'],
+    swing_mode_cmd_t: `/ac/${deviceName}/swing/set`,    //ha response on swing change
+    swing_mode_stat_t: stateTopic,                    //ha set swing
+    swing_mode_stat_tpl: "{{ value_json.acvs }}",
+
+    modes: ['auto', 'cool', 'heat', 'dry', 'fan_only', 'off'],    //heat is used for powerful mode
+    fan_modes: ['auto', 'low', 'medium', 'high'],
+    swing_modes: ["0", "1", "2", "3", "4", "5"],
+    temperature_unit: "C",
+    temp_step: 1,
 
     dev: {
       ids: [device.id, device.details.macAddress],
@@ -50,12 +56,12 @@ const generateConfigPayload = device => {
 
 const generateMonthlyPowerConsumptionPayload = device => {
   const deviceName = device.name;
-  const stateTopic = `miraie-ac/${deviceName}/monthly-power-consumption/state`;
+  const stateTopic = `/ac/${deviceName}/monthly-power-consumption/state`;
 
   const discoMsg = {
     name: `Monthly Power Consumption - ${device.friendlyName}`,
     unique_id: `monthly-power-consumption-${deviceName}`,
-    avty_t: `miraie-ac/${deviceName}/availability`,
+    avty_t: `/ac/${deviceName}/availability`,
     pl_avail: 'online',
     pl_not_avail: 'offline',
     unit_of_meas: 'kWh',
@@ -78,12 +84,12 @@ const generateMonthlyPowerConsumptionPayload = device => {
 
 const generateDailyPowerConsumptionPayload = device => {
   const deviceName = device.name;
-  const stateTopic = `miraie-ac/${deviceName}/daily-power-consumption/state`;
+  const stateTopic = `/ac/${deviceName}/daily-power-consumption/state`;
 
   const discoMsg = {
     name: `Daily Power Consumption - ${device.friendlyName}`,
     unique_id: `daily-power-consumption-${deviceName}`,
-    avty_t: `miraie-ac/${deviceName}/availability`,
+    avty_t: `/ac/${deviceName}/availability`,
     pl_avail: 'online',
     pl_not_avail: 'offline',
     unit_of_meas: 'kWh',
