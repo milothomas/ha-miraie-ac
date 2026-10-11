@@ -20,5 +20,4 @@ Once authenticated, the list of devices is pulled down exposed to HA using MQTT 
 ---
 ## TODO
 1. Show debug messages to help with troubleshooting
-2. The MQTT discovery prefix is hard coded to "homeassisstant", this should be configurable on the node.
-3. Follow coding standards and best practices
+2. Follow coding standards and best practices

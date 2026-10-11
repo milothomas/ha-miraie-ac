@@ -257,6 +257,16 @@ Miraie.prototype.getHomeDetails = () => {
     );
 };
 
+Miraie.prototype.login = () => {
+  return login().then(
+    accessToken => {
+      _home.accessToken = accessToken;
+      return accessToken;
+    },
+    e => rethrow(e, LoginErrorMsg)
+  );
+};
+
 Miraie.prototype.getDeviceStatus = () => {
   return getAllDeviceStatus().then(
     devices => devices,

@@ -21,7 +21,9 @@ const generateConfigPayload = device => {
     temp_stat_tpl: '{{ value_json.actmp }}',
 
     curr_temp_t: stateTopic,
-    curr_temp_tpl: '{{ value_json.rmtmp }}',
+    // Newer firmware packs rmtmp, e.g. 150.27 = 27; a fraction other than .0/.5 is the real temperature.
+    curr_temp_tpl:
+      "{% set t = value_json.rmtmp | string %}{% set p = t.split('.') %}{{ p[1] | int if p | length == 2 and p[1] | int not in [0, 5, 50] else t | float }}",
 
     max_temp: '30',
     min_temp: '16',
@@ -35,6 +37,11 @@ const generateConfigPayload = device => {
 
     modes: ['auto', 'cool', 'dry', 'fan_only', 'off'],
     fan_modes: ['auto', 'quiet', 'low', 'medium', 'high'],
+
+    swing_mode_cmd_t: `miraie-ac/${deviceName}/swing/set`,
+    swing_mode_stat_t: stateTopic,
+    swing_mode_stat_tpl: "{{ 'auto' if value_json.acvs | int == 0 else value_json.acvs }}",
+    swing_modes: ['auto', '1', '2', '3', '4', '5'],
 
     dev: {
       ids: [device.id, device.details.macAddress],
@@ -104,18 +111,50 @@ const generateDailyPowerConsumptionPayload = device => {
   return discoMsg;
 };
 
+const generateDisplaySwitchPayload = device => {
+  const deviceName = device.name;
+
+  const discoMsg = {
+    name: `Display - ${device.friendlyName}`,
+    unique_id: `display-${deviceName}`,
+    avty_t: `miraie-ac/${deviceName}/availability`,
+    pl_avail: 'online',
+    pl_not_avail: 'offline',
+    cmd_t: `miraie-ac/${deviceName}/display/set`,
+    stat_t: `miraie-ac/${deviceName}/state`,
+    val_tpl: '{{ value_json.acdc }}',
+    pl_on: 'on',
+    pl_off: 'off',
+    stat_on: 'on',
+    stat_off: 'off',
+    icon: 'mdi:led-on',
+    dev: {
+      ids: [device.id, device.details.macAddress],
+      mf: device.details.brand,
+      name: device.friendlyName,
+      mdl: device.details.modelNumber,
+      sw: device.details.firmwareVersion
+    }
+  };
+
+  return discoMsg;
+};
+
 function MqttDiscovery() {}
 
-MqttDiscovery.prototype.generateDiscoMessage = function (device) {
+MqttDiscovery.prototype.generateDiscoMessage = function (device, prefix) {
   return [{
-      topic: `homeassistant/climate/${device.name}/config`,
+      topic: `${prefix}/climate/${device.name}/config`,
       payload: generateConfigPayload(device)
     }, {
-      topic: `homeassistant/sensor/monthly-power-consumption/${device.name}/config`,
+      topic: `${prefix}/sensor/monthly-power-consumption/${device.name}/config`,
       payload: generateMonthlyPowerConsumptionPayload(device)
     }, {
-      topic: `homeassistant/sensor/daily-power-consumption/${device.name}/config`,
+      topic: `${prefix}/sensor/daily-power-consumption/${device.name}/config`,
       payload: generateDailyPowerConsumptionPayload(device)
+    }, {
+      topic: `${prefix}/switch/miraie-display/${device.name}/config`,
+      payload: generateDisplaySwitchPayload(device)
     }
   ];
 };
