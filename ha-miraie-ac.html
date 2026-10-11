@@ -9,6 +9,7 @@
       haBrokerPort: { value: '1883', validate: RED.validators.number() },
       useCleanSession: { value: 'true' },
       useSsl: { value: 'false' },
+      haDiscoveryPrefix: { value: 'homeassistant', required: true },
       logLevel: { value: 'INFO' }
     },
     credentials: {
@@ -117,6 +118,11 @@
       <option value="true">Yes</option>
       <option value="false">No</option>
     </select>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-haDiscoveryPrefix"><i class="fa fa-tag"></i> Discovery Prefix</label>
+    <input type="text" id="node-input-haDiscoveryPrefix" placeholder="homeassistant" />
   </div>
 
   <div class="form-row">
