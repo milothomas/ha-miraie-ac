@@ -5,12 +5,14 @@ const Logger = require('../utilities/logger');
 let _haBroker;
 let _miraieBroker;
 let _devices;
+let _homeId;
 
 const onMiraieStateChanged = function (topic, payload) {
   const device = _devices.find(d => d.statusTopic === topic || d.connectionStatusTopic === topic);
   if (!device) return;
 
-  device.status = JSON.parse(payload.toString());
+  // Merge so state (statusTopic) and onlineStatus (connectionStatusTopic) don't overwrite each other.
+  device.status = { ...device.status, ...JSON.parse(payload.toString()) };
   Logger.logDebug(`Received update from MirAIe for ${device.friendlyName}.`);
 
   if (device.statusTopic == topic) {    
@@ -34,6 +36,7 @@ function BrokerBridge() {}
 
 BrokerBridge.prototype.initialize = function (home, settings) {
   _devices = home.devices;
+  _homeId = home.homeId;
   const deviceTopics = home.devices.map(d => [d.statusTopic, d.connectionStatusTopic]);
   const miraieTopics = [].concat(...deviceTopics);
 
@@ -59,6 +62,12 @@ BrokerBridge.prototype.publishDeviceStatus = function (devices) {
     _haBroker.publishState(device);
     _haBroker.publishConnectionStatus(device);
   });
+};
+
+BrokerBridge.prototype.reconnectMiraie = function (accessToken) {
+  _miraieBroker.disconnect();
+  _miraieBroker.connect(_homeId, accessToken);
+  Logger.logDebug('MirAIe Broker reconnected with a new access token.');
 };
 
 BrokerBridge.prototype.disconnectBrokers = function () {

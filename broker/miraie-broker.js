@@ -6,9 +6,12 @@ let topics;
 let onStateChangedCallback;
 
 const CMD_TYPES = {
+  POWER: 'power',
   MODE: 'mode',
   TEMPERATURE: 'temp',
-  FAN: 'fan'
+  FAN: 'fan',
+  DISPLAY: 'display',
+  RAW: 'raw'
 };
 
 const brokerDetails = {
@@ -41,6 +44,10 @@ const buildBasePayload = () => {
 };
 
 const getCommandType = topic => {
+  if (topic.endsWith('/power/set')) {
+    return CMD_TYPES.POWER;
+  }
+
   if (topic.endsWith('/mode/set')) {
     return CMD_TYPES.MODE;
   }
@@ -52,29 +59,46 @@ const getCommandType = topic => {
   if (topic.endsWith('/fan/set')) {
     return CMD_TYPES.FAN;
   }
+
+  if (topic.endsWith('/display/set')) {
+    return CMD_TYPES.DISPLAY;
+  }
+
+  if (topic.endsWith('/raw/set')) {
+    return CMD_TYPES.RAW;
+  }
 };
 
+const generatePowerMessage = (basePayload, command, topic) => {
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        ps: command
+      }
+    }
+  ];
+};
+
+// One message per change so the AC beeps once; 'off' has no matching acmd value.
 const generateModeMessages = (basePayload, command, topic) => {
-  const powerMode = command == 'off' ? 'off' : 'on';
+  if (command == 'off') {
+    return generatePowerMessage(basePayload, 'off', topic);
+  }
+
   const acMode = command == 'fan_only' ? 'fan' : command;
 
-  const powerMessage = {
-    topic,
-    payload: {
-      ...basePayload,
-      ps: powerMode
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        ps: 'on',
+        acmd: acMode
+      }
     }
-  };
-
-  const modeMessage = {
-    topic,
-    payload: {
-      ...basePayload,
-      acmd: acMode
-    }
-  };
-
-  return [powerMessage, modeMessage];
+  ];
 };
 
 const generateTemperatureMessage = (basePayload, command, topic) => {
@@ -101,14 +125,58 @@ const generateFanMessage = (basePayload, command, topic) => {
   ];
 };
 
+const generateDisplayMessage = (basePayload, command, topic) => {
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        acdc: command
+      }
+    }
+  ];
+};
+
+// Sends an arbitrary JSON object of MirAIe keys, e.g. {"acdc":"off"}, for experimenting.
+const generateRawMessage = (basePayload, command, topic) => {
+  let fields;
+  try {
+    fields = JSON.parse(command);
+  } catch (e) {
+    Logger.logError(`Invalid JSON on raw command: ${command}`);
+    return [];
+  }
+
+  if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
+    Logger.logError(`Raw command must be a JSON object: ${command}`);
+    return [];
+  }
+
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        ...fields
+      }
+    }
+  ];
+};
+
 const generateMessages = (topic, command, cmdType, basePayload) => {
   switch (cmdType) {
+    case CMD_TYPES.POWER:
+      return generatePowerMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.MODE:
       return generateModeMessages(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.TEMPERATURE:
       return generateTemperatureMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.FAN:
       return generateFanMessage(basePayload, command.toLowerCase(), topic);
+    case CMD_TYPES.DISPLAY:
+      return generateDisplayMessage(basePayload, command.toLowerCase(), topic);
+    case CMD_TYPES.RAW:
+      return generateRawMessage(basePayload, command, topic);
   }
   return [];
 };

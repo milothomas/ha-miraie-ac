@@ -6,6 +6,7 @@ const Logger = require('../utilities/logger');
 let mqttClient;
 let mqttDisco;
 let topics;
+let discoveryPrefix;
 let discoveredDevices;
 let onCmdReceivedCallback;
 
@@ -15,7 +16,7 @@ const publishMessage = (topic, payload) => {
 
 const publishDisoveryMessages = () => {
   discoveredDevices.map(d => {
-    const messages = mqttDisco.generateDiscoMessage(d);
+    const messages = mqttDisco.generateDiscoMessage(d, discoveryPrefix);
     
     messages.map(m => {
       publishMessage(m.topic, m.payload);
@@ -23,13 +24,34 @@ const publishDisoveryMessages = () => {
   });
 };
 
+const getHAStatusTopic = () => `${discoveryPrefix}/status`;
+
+// HA forgets non-retained discovery, state and availability when it restarts.
+const republishAll = () => {
+  publishDisoveryMessages();
+  discoveredDevices
+    .filter(d => d.status)
+    .map(d => {
+      generateStateMessages(d).map(m => publishMessage(m.topic, m.payload));
+      generateAvailabilityMessage(d).map(m => publishMessage(m.topic, m.payload));
+    });
+};
+
 const onConnected = () => {
   Logger.logInfo('HA broker connected.');
   publishDisoveryMessages();
-  mqttClient.subscribe(topics, { qos: 2 });
+  mqttClient.subscribe([...topics, getHAStatusTopic()], { qos: 2 });
 };
 
 const onMessageReceieved = (topic, payload) => {
+  if (topic === getHAStatusTopic()) {
+    if (payload.toString() === 'online') {
+      Logger.logInfo('Home Assistant came online, republishing devices.');
+      republishAll();
+    }
+    return;
+  }
+
   if (onCmdReceivedCallback) {
     onCmdReceivedCallback(topic, payload);
   }
@@ -107,6 +129,7 @@ function HABroker(devices, onCmdReceieved) {
 
 HABroker.prototype.connect = function (settings) {
   const clientId = 'node-red-ha-miraie-ac-node' + Utils.generateId(5);
+  discoveryPrefix = settings.haDiscoveryPrefix;
   mqttClient.connect(
     settings.haBrokerHost,
     settings.haBrokerPort,
